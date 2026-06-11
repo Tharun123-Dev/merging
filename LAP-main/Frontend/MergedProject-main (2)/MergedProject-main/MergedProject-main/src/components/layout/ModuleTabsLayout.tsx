@@ -1,19 +1,17 @@
 import React from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { usePermissions } from '@/auth/usePermissions';
 
 interface TabItem {
   label: string;
   path: string;
-  permissions?: string[];
-  module?: string;
 }
 
 const TABS: Record<string, TabItem[]> = {
   'access-control': [
     { label: 'Users Directory', path: '/users' },
     { label: 'Roles List', path: '/roles' },
+    { label: 'Role Mapping', path: '/roles/mapping' },
     { label: 'Role Hierarchy', path: '/role-hierarchy' },
     { label: 'Permissions Registry', path: '/permissions' },
   ],
@@ -31,11 +29,11 @@ const TABS: Record<string, TabItem[]> = {
     { label: 'System Settings', path: '/settings/system' },
   ],
   'hrms': [
-    { label: 'Attendance', path: '/attendance', permissions: ['ATTENDANCE_VIEW'] },
-    { label: 'Leave', path: '/leave', permissions: ['LEAVE_VIEW', 'LEAVE_APPLY'] },
-    { label: 'Payroll', path: '/payroll', permissions: ['PAYROLL_VIEW', 'SALARY_VIEW', 'PAYSLIP_VIEW'] },
-    { label: 'Branches', path: '/hrms/branches', permissions: ['SETTINGS_MANAGE', 'EMPLOYEE_VIEW'] },
-    { label: 'Attendance Shifts', path: '/hrms/shifts', permissions: ['SETTINGS_MANAGE', 'ATTENDANCE_MANAGE'] },
+    { label: 'Attendance', path: '/attendance' },
+    { label: 'Leave', path: '/leave' },
+    { label: 'Payroll', path: '/payroll' },
+    { label: 'Branches', path: '/hrms/branches' },
+    { label: 'Attendance Shifts', path: '/hrms/shifts' },
   ],
   'crm': [
     { label: 'Leads Directory', path: '/leads' },
@@ -56,15 +54,10 @@ const TABS: Record<string, TabItem[]> = {
 };
 
 function ModuleTabsHeader({ moduleName }: { moduleName: string }) {
-  const { hasPermission, isModuleEnabled } = usePermissions();
-  const items = (TABS[moduleName] || []).filter((item) => {
-    if (item.module && !isModuleEnabled(item.module)) return false;
-    if (item.permissions?.length) return item.permissions.some((permission) => hasPermission(permission));
-    return true;
-  });
+  const items = TABS[moduleName];
   const location = useLocation();
 
-  if (items.length === 0) return null;
+  if (!items) return null;
 
   return (
     <div className="flex gap-1 border-b border-border pb-px mb-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
