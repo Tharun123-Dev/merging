@@ -48,11 +48,21 @@ const FALLBACK_DEFAULTS = {
 };
 
 export function PayrollPage() {
-  const { hasPermission } = usePermissions();
+  const { hasPermission, role, isPlatformAdmin } = usePermissions();
 
-  const canProcess = hasPermission('process_payroll');
-  const canApprove = hasPermission('approve_payroll');
-  const canManage = hasPermission('configure_salary') || hasPermission('manage_payroll');
+  const normalizedRole = String(role || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  const isPayrollAdmin =
+    isPlatformAdmin ||
+    ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'TENANT_ADMIN', 'HR'].includes(normalizedRole);
+
+  const canProcess = isPayrollAdmin || hasPermission('process_payroll') || hasPermission('PAYROLL_PROCESS');
+  const canApprove = isPayrollAdmin || hasPermission('approve_payroll') || hasPermission('PAYROLL_APPROVE');
+  const canManage =
+    isPayrollAdmin ||
+    hasPermission('configure_salary') ||
+    hasPermission('manage_payroll') ||
+    hasPermission('PAYROLL_CONFIGURE') ||
+    hasPermission('SALARY_CONFIGURE');
 
   const [tab, setTab] = useState<'payslips' | 'salary' | 'runs' | 'config'>('payslips');
 

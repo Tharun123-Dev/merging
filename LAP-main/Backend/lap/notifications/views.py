@@ -121,6 +121,7 @@ DEFAULT_SETTINGS = [
     {'key': 'pt_below_threshold_amount','label': 'PT Below Threshold (INR)',     'value': '0',          'value_type': 'integer',  'category': 'payroll',    'description': 'Professional Tax deducted when monthly gross is below or equal to threshold'},
     {'key': 'pt_above_threshold_amount','label': 'PT Above Threshold (INR)',     'value': '200',        'value_type': 'integer',  'category': 'payroll',    'description': 'Professional Tax deducted when monthly gross is above threshold'},
     # General
+   {'key': 'company_name',      'label': 'Company Name',      'value': 'My Company', 'value_type': 'string', 'category': 'general', 'description': 'Company name shown in payslip and reports.'},
    {'key': 'currency',          'label': 'Currency',          'value': 'INR',  'value_type': 'string', 'category': 'general', 'description': 'Currency symbol used in payroll and reports.'},
 {'key': 'company_logo_url',  'label': 'Company Logo URL',  'value': '',     'value_type': 'string', 'category': 'general', 'description': 'Logo URL shown in payslip and email headers.'},
     {'key': 'office_latitude',         'label': 'Office Latitude',             'value': '',           'value_type': 'decimal', 'category': 'general', 'description': 'Latitude used for office check-in/check-out location validation.'},
@@ -128,6 +129,7 @@ DEFAULT_SETTINGS = [
     {'key': 'office_radius_meters',    'label': 'Office Radius (Meters)',      'value': '300',        'value_type': 'integer', 'category': 'general', 'description': 'Allowed distance from office for check-in/check-out.'},
     {'key': 'timezone',                 'label': 'Timezone',                     'value': 'Asia/Kolkata','value_type': 'string',  'category': 'general',    'description': 'System timezone'},
     {'key': 'fiscal_year_start_month',  'label': 'Fiscal Year Start Month',      'value': '4',          'value_type': 'integer',  'category': 'general',    'description': 'Month fiscal year starts (4=April)'},
+    {'key': 'probation_period_months',  'label': 'Probation Period Months',      'value': '6',          'value_type': 'integer',  'category': 'general',    'description': 'Default employee probation period in months.'},
 ]
 
 
