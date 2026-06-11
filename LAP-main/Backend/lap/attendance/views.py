@@ -37,6 +37,7 @@ from .settings_helper import (
     get_grace_minutes,
     get_standard_hours,
     get_half_day_hours,
+    get_weekend_days,
 )
 
 
@@ -735,8 +736,12 @@ class MyAttendanceView(APIView):
             'holidays': holidays,
             'policy': {
                 'shift_start':   shift_start.strftime('%H:%M'),
+                'shift_end':     get_shift_end().strftime('%H:%M'),
                 'grace_minutes': grace_minutes,
                 'late_cutoff':   late_cutoff,
+                'standard_hours': get_standard_hours(),
+                'half_day_hours': get_half_day_hours(),
+                'weekend_days': get_weekend_days(),
                 'night_shift_enabled': get_night_shift_enabled(),
                 'night_shift_start':   get_night_shift_start().strftime('%H:%M'),
                 'night_shift_end':     get_night_shift_end().strftime('%H:%M'),
@@ -804,8 +809,15 @@ class ApplyRegularizationView(APIView):
                 employee=request.user,
                 date=parsed_date,
                 shift_type=shift_type,
-                defaults={'status': 'pending', 'note': 'Pending regularization request'},
+                defaults={
+                    'tenant_id': get_tenant_id(request),
+                    'status': 'pending',
+                    'note': 'Pending regularization request',
+                },
             )
+            if record.tenant_id != get_tenant_id(request):
+                record.tenant_id = get_tenant_id(request)
+                record.save(update_fields=['tenant_id'])
             if not record.shift_start_snapshot or not record.shift_end_snapshot:
                 _snapshot_shift_policy_for_type(record, shift_type)
                 record.save(update_fields=[
@@ -863,7 +875,7 @@ class AllRegularizationsView(APIView):
         status_filter = request.query_params.get('status')
         qs = AttendanceRegularization.objects.select_related(
             'employee', 'employee__profile', 'attendance',
-        ).filter(tenant_id=get_tenant_id(request)).exclude(employee=request.user).order_by('-created_at')
+        ).filter(tenant_id=get_tenant_id(request)).order_by('-created_at')
         if status_filter:
             qs = qs.filter(status=status_filter)
         return Response(RegularizationSerializer(qs, many=True).data)

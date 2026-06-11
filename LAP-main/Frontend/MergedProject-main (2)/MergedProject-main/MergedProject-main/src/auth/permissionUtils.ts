@@ -1,22 +1,47 @@
 import { User } from './AuthContext';
 
+const permissionAliases: Record<string, string[]> = {
+  LEAD_VIEW: ['CRM_VIEW'],
+  LEAD_CREATE: ['CRM_CREATE'],
+  LEAD_UPDATE: ['CRM_UPDATE', 'CRM_MANAGE'],
+  SUPPORT_TICKET_VIEW: ['SUPPORT_VIEW', 'TICKET_VIEW'],
+  SUPPORT_TICKET_CREATE: ['SUPPORT_CREATE', 'TICKET_CREATE'],
+  REPORT_VIEW: ['REPORTS_VIEW'],
+  REPORT_SELF: ['SELF_REPORTS_VIEW', 'SELF_REPORT_VIEW'],
+  PAYROLL_VIEW: ['SALARY_VIEW', 'PAYSLIP_VIEW'],
+  ATTENDANCE_VIEW: ['VIEW_ATTENDANCE'],
+}
+
 export function hasPermission(permissions: string[] | null, permissionKey: string): boolean {
   if (!permissions || !Array.isArray(permissions)) return false;
   
   const upperKey = permissionKey.toUpperCase();
-  const upperPerms = permissions.map(p => p.toUpperCase());
+  const upperPerms = permissions.map(p => String(p).toUpperCase());
+  const normalizedKey = upperKey.replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const normalizedPerms = upperPerms.map(p => p.replace(/[^A-Z0-9*]+/g, '_').replace(/^_+|_+$/g, ''));
 
   // Global wildcard
-  if (upperPerms.includes('*')) return true;
+  if (upperPerms.includes('*') || normalizedPerms.includes('*')) return true;
 
   // Exact match
-  if (upperPerms.includes(upperKey)) return true;
+  if (upperPerms.includes(upperKey) || normalizedPerms.includes(normalizedKey)) return true;
+
+  const aliases = permissionAliases[normalizedKey] || [];
+  if (aliases.some(alias => normalizedPerms.includes(alias))) return true;
+
+  const parts = normalizedKey.split('_').filter(Boolean);
+  if (parts.length >= 2) {
+    const first = parts[0];
+    const rest = parts.slice(1).join('_');
+    const flipped = `${rest}_${first}`;
+    if (normalizedPerms.includes(flipped)) return true;
+  }
 
   // Namespace wildcard checks (e.g. USER_* matches USER_VIEW)
-  for (const perm of upperPerms) {
+  for (const perm of normalizedPerms) {
     if (perm.endsWith('*')) {
       const prefix = perm.slice(0, -1);
-      if (upperKey.startsWith(prefix)) {
+      if (normalizedKey.startsWith(prefix)) {
         return true;
       }
     }
@@ -24,8 +49,8 @@ export function hasPermission(permissions: string[] | null, permissionKey: strin
 
   // Generic fallback: If the route requires a VIEW permission,
   // grant access if the user has CREATE, UPDATE, DELETE, or MANAGE permission for that entity.
-  if (upperKey.endsWith('_VIEW')) {
-    const prefix = upperKey.substring(0, upperKey.length - 5);
+  if (normalizedKey.endsWith('_VIEW')) {
+    const prefix = normalizedKey.substring(0, normalizedKey.length - 5);
     const fallbackKeys = [
       `${prefix}_CREATE`,
       `${prefix}_UPDATE`,
@@ -33,7 +58,7 @@ export function hasPermission(permissions: string[] | null, permissionKey: strin
       `${prefix}_MANAGE`,
       `${prefix}_WRITE`
     ];
-    if (fallbackKeys.some(key => upperPerms.includes(key))) {
+    if (fallbackKeys.some(key => normalizedPerms.includes(key))) {
       return true;
     }
   }

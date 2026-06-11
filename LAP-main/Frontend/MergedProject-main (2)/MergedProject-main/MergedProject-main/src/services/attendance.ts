@@ -28,6 +28,28 @@ export interface AttendanceRecord {
   holiday_name?: string | null;
 }
 
+export interface AttendancePolicy {
+  shift_start: string;
+  shift_end: string;
+  grace_minutes: number;
+  late_cutoff: string;
+  standard_hours: number;
+  half_day_hours: number;
+  weekend_days: string[];
+  night_shift_enabled: boolean;
+  night_shift_start: string;
+  night_shift_end: string;
+}
+
+export interface MonthlyAttendanceResponse {
+  month: number;
+  year: number;
+  summary: Record<string, number>;
+  records: AttendanceRecord[];
+  holidays: Holiday[];
+  policy?: AttendancePolicy;
+}
+
 export interface Holiday {
   id: string;
   name: string;
@@ -42,11 +64,21 @@ export interface RegularizationRequest {
   date: string;
   requested_check_in?: string | null;
   requested_check_out?: string | null;
+  requested_checkin?: string | null;
+  requested_checkout?: string | null;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   manager_note?: string;
+  approver_note?: string;
   created_at: string;
 }
+
+const normalizeRegularization = (request: RegularizationRequest): RegularizationRequest => ({
+  ...request,
+  requested_check_in: request.requested_check_in ?? request.requested_checkin ?? null,
+  requested_check_out: request.requested_check_out ?? request.requested_checkout ?? null,
+  manager_note: request.manager_note ?? request.approver_note ?? '',
+});
 
 export const attendanceService = {
   getOfficeLocation: () => rolesApi.get<OfficeLocation>('/attendance/office-location/'),
@@ -67,16 +99,31 @@ export const attendanceService = {
     ot_hours?: number;
   }>('/attendance/today/'),
   getMyAttendance: (month: number, year: number) =>
-    rolesApi.get<unknown>('/attendance/my/', { params: { month, year } }),
+    rolesApi.get<MonthlyAttendanceResponse | AttendanceRecord[]>('/attendance/my/', { params: { month, year } }),
   getAllAttendance: (month: number, year: number, employeeId?: string) =>
     rolesApi.get<AttendanceRecord[]>('/attendance/all/', { params: { month, year, employee: employeeId } }),
   applyRegularization: (data: { date: string; requested_check_in?: string; requested_check_out?: string; reason: string }) =>
-    rolesApi.post<RegularizationRequest>('/attendance/regularize/', data),
-  getMyRegularizations: () => rolesApi.get<RegularizationRequest[]>('/attendance/regularize/my/'),
+    rolesApi.post<RegularizationRequest>('/attendance/regularize/', {
+      date: data.date,
+      requested_checkin: data.requested_check_in,
+      requested_checkout: data.requested_check_out,
+      reason: data.reason,
+    }),
+  getMyRegularizations: () =>
+    rolesApi.get<RegularizationRequest[]>('/attendance/regularize/my/').then((res) => ({
+      ...res,
+      data: (res.data || []).map(normalizeRegularization),
+    })),
   getAllRegularizations: (status?: string) =>
-    rolesApi.get<RegularizationRequest[]>('/attendance/regularize/all/', { params: { status } }),
+    rolesApi.get<RegularizationRequest[]>('/attendance/regularize/all/', { params: { status } }).then((res) => ({
+      ...res,
+      data: (res.data || []).map(normalizeRegularization),
+    })),
   actionRegularization: (id: string, action: 'approve' | 'reject', note: string) =>
-    rolesApi.post<RegularizationRequest>(`/attendance/regularize/${id}/action/`, { action, note }),
+    rolesApi.post<RegularizationRequest>(`/attendance/regularize/${id}/action/`, { action, note }).then((res) => ({
+      ...res,
+      data: normalizeRegularization(res.data),
+    })),
   getHolidays: () => rolesApi.get<Holiday[]>('/attendance/holidays/'),
   createHoliday: (data: Omit<Holiday, 'id'>) => rolesApi.post<Holiday>('/attendance/holidays/', data),
   updateHoliday: (id: string, data: Partial<Holiday>) => rolesApi.put<Holiday>(`/attendance/holidays/${id}/`, data),

@@ -8,7 +8,7 @@ export const tasksService = {
   deleteTask: (id: string) => rolesApi.delete<unknown>(`/tasks/${id}/`),
   archiveTask: (id: string) => rolesApi.post<Task>(`/tasks/${id}/archive/`),
   addComment: (id: string, content: string) => rolesApi.post<Task>(`/tasks/${id}/comment/`, { content }),
-  getMembers: () => rolesApi.get<Member[]>('/tasks/members/'),
+  getMembers: () => rolesApi.get<Member[] | { content?: Member[]; data?: Member[]; results?: Member[] }>('/users'),
   getNotifications: () => rolesApi.get<Notification[]>('/tasks/notifications/'),
   markNotificationsRead: () => rolesApi.post<unknown>('/tasks/mark_notifications_read/'),
 };

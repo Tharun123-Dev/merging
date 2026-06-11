@@ -29,14 +29,17 @@ const parseToken = (jwtToken: string | null): User | null => {
   try {
     const payload = JSON.parse(atob(jwtToken.split('.')[1]));
     const storedRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    const role = storedRole || payload.role || payload.roleName || 'STAFF';
+    const normalizedRole = String(role).toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+    const isPlatformRole = ['SUPER_ADMIN', 'SUPERADMIN', 'PLATFORM_ADMIN', 'SYSTEM_ADMIN'].includes(normalizedRole);
     
     return {
       id: payload.id || payload.userId,
       email: payload.sub,
       tenantId: payload.tenantId,
       tenantCode: payload.tenantCode,
-      isPlatformAdmin: payload.tenantId === 1 || payload.tenantCode === 'SYS',
-      role: storedRole || payload.role || payload.roleName || 'STAFF',
+      isPlatformAdmin: payload.tenantCode === 'SYS' || isPlatformRole,
+      role,
     };
   } catch {
     return null;

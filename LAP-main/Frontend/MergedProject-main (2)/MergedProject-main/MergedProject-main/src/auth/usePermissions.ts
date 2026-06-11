@@ -4,9 +4,14 @@ import { isModuleEnabled as checkModuleEnabled } from './moduleUtils';
 
 export function usePermissions() {
   const auth = useAuth();
-  const permissions = auth?.permissions || [];
+  const rawPermissions = auth?.permissions || [];
   const modules = auth?.modules || [];
   const user = auth?.user || null;
+  const normalizedRole = String(user?.role || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  const isSuperAdmin =
+    checkPlatformAdmin(user) ||
+    ['SUPER_ADMIN', 'SUPERADMIN', 'PLATFORM_ADMIN', 'SYSTEM_ADMIN'].includes(normalizedRole);
+  const permissions = isSuperAdmin ? ['*'] : rawPermissions;
 
   return {
     permissions,
@@ -16,7 +21,7 @@ export function usePermissions() {
     hasPermission: (perm: string) => checkPermission(permissions, perm),
     hasAnyPermission: (perms: string[]) => hasAnyPermission(permissions, perms),
     hasAllPermissions: (perms: string[]) => hasAllPermissions(permissions, perms),
-    isModuleEnabled: (mod: string) => checkModuleEnabled(modules, mod),
-    isPlatformAdmin: checkPlatformAdmin(user),
+    isModuleEnabled: (mod: string) => isSuperAdmin || checkModuleEnabled(modules, mod),
+    isPlatformAdmin: isSuperAdmin,
   };
 }

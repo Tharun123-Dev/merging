@@ -52,26 +52,11 @@ export const AffiliateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
-      let userProf: AffiliateProfile;
+      let userProf: AffiliateProfile | null = null;
       try {
         userProf = await affiliateService.getCurrentUser();
       } catch (err) {
         console.error('Failed to get current user:', err);
-        userProf = {
-          id: 'usr_fallback',
-          name: authUser?.email.split('@')[0] || 'Partner User',
-          email: authUser?.email || 'partner@affiliate.io',
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser?.email.split('@')[0] || 'P')}&background=7c3aed&color=fff`,
-          phone: '',
-          address: '',
-          upiId: '',
-          earnings: {
-            total: 0,
-            pending: 0,
-            paid: 0,
-            thisMonth: 0
-          }
-        };
       }
 
       const [
@@ -110,7 +95,7 @@ export const AffiliateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
 
       // Override with active logged-in user details if available
-      if (authUser) {
+      if (authUser && userProf) {
         userProf.name = localStorage.getItem('name') || authUser.email.split('@')[0] || userProf.name;
         userProf.email = authUser.email || userProf.email;
       }

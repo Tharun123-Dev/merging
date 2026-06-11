@@ -16,6 +16,8 @@ PERMISSION_MODULE_ALIASES = {
     'departments': ['DEPARTMENT', 'EMPLOYEE'],
     'department': ['DEPARTMENT', 'EMPLOYEE'],
     'attendance': ['ATTENDANCE', 'HRMS'],
+    'regularize': ['ATTENDANCE', 'HRMS'],
+    'regularization': ['ATTENDANCE', 'HRMS'],
     'leave': ['LEAVE', 'HRMS'],
     'salary': ['PAYROLL', 'HRMS'],
     'payroll': ['PAYROLL', 'HRMS'],
@@ -120,6 +122,19 @@ def _java_permission_candidates(required_code):
             'ATTENDANCE_UPDATE',
             'HRMS_MANAGE_SETTINGS',
             'HRMS_ATTENDANCE_MANAGE',
+        })
+
+    if required in {'approve_regularize', 'approve_regularization', 'approve_attendance'}:
+        candidates.update({
+            'ATTENDANCE_APPROVE',
+            'ATTENDANCE_ACTION',
+            'ATTENDANCE_MANAGE',
+            'HRMS_ATTENDANCE_APPROVE',
+            'HRMS_ATTENDANCE_ACTION',
+            'HRMS_ATTENDANCE_MANAGE',
+            'APPROVE_ATTENDANCE',
+            'APPROVE_REGULARIZATION',
+            'REGULARIZATION_APPROVE',
         })
 
     return candidates

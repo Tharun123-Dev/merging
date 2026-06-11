@@ -4,7 +4,7 @@ import {
   PayoutTransaction, PerformanceTrend, AffiliateNotification 
 } from '../types';
 
-const USE_API = import.meta.env.VITE_USE_AFFILIATE_API !== 'false';
+const USE_API = true;
 
 const mockUser: AffiliateProfile = {
   id: 'usr_982347',
@@ -398,10 +398,8 @@ export const affiliateService = {
     try {
       const data = await unwrap<RawProfile>(rolesApi.get('/affiliate/profile/'));
       return mapProfile(data);
-    } catch {
-      const currentUser = getCurrentLapProfile();
-      localStorage.setItem('affiliate_ref_code', currentUser.referralCode || '');
-      return currentUser;
+    } catch (error) {
+      throw error;
     }
   },
 
@@ -442,7 +440,7 @@ export const affiliateService = {
       const data = await unwrap<RawReferral[]>(rolesApi.get('/affiliate/referrals/'));
       return data.map(mapReferral);
     } catch {
-      return mockReferrals;
+      return [];
     }
   },
 
@@ -451,20 +449,20 @@ export const affiliateService = {
     try {
       const data = await unwrap<RawReferral>(rolesApi.get(`/affiliate/referrals/${id}/`));
       return mapReferral(data);
-    } catch {
-      return mockReferrals.find((ref) => ref.id === id) || mockReferrals[0];
+    } catch (error) {
+      throw error;
     }
   },
 
   getReferralLinks: async (): Promise<ReferralLink[]> => {
     const stored = localStorage.getItem('referral_links');
     if (stored) return JSON.parse(stored);
-    return mockReferralLinks;
+    return [];
   },
 
   createReferralLink: async (name: string): Promise<ReferralLink> => {
     if (!name) throw new Error('Link name is required');
-    const refCode = localStorage.getItem('affiliate_ref_code') || 'SARAH50X';
+    const refCode = localStorage.getItem('affiliate_ref_code') || '';
     const newLink: ReferralLink = {
       id: `link_${Math.random().toString(36).slice(2, 7)}`,
       name,
@@ -477,7 +475,7 @@ export const affiliateService = {
       status: 'active',
     };
     const stored = localStorage.getItem('referral_links');
-    const links = stored ? JSON.parse(stored) : [...mockReferralLinks];
+    const links = stored ? JSON.parse(stored) : [];
     links.push(newLink);
     localStorage.setItem('referral_links', JSON.stringify(links));
     return newLink;
@@ -486,14 +484,14 @@ export const affiliateService = {
   getEarningsSummary: async () => {
     if (!USE_API) {
       return {
-        total: mockUser.earnings.total,
-        pending: mockUser.earnings.pending,
-        paid: mockUser.earnings.paid,
-        thisMonth: mockUser.earnings.thisMonth,
-        conversionRate: 6.27,
-        totalClicks: 26400,
-        totalReferrals: mockReferrals.length,
-        activeCampaigns: 3,
+        total: 0,
+        pending: 0,
+        paid: 0,
+        thisMonth: 0,
+        conversionRate: 0,
+        totalClicks: 0,
+        totalReferrals: 0,
+        activeCampaigns: 0,
       };
     }
     try {
@@ -523,15 +521,7 @@ export const affiliateService = {
   },
 
   getCommissionHistory: async (): Promise<CommissionRecord[]> => {
-    const fallbackCommissions = (): CommissionRecord[] => mockReferrals.map((ref) => ({
-      id: `comm_${ref.id}`,
-      referrer: ref.name,
-      type: ref.plan,
-      rate: '20%',
-      amount: ref.commission || 0,
-      date: ref.joinedDate,
-      status: ref.status === 'converted' ? 'paid' : 'pending',
-    }));
+    const fallbackCommissions = (): CommissionRecord[] => [];
 
     if (!USE_API) return fallbackCommissions();
     try {
@@ -568,7 +558,7 @@ export const affiliateService = {
       const data = await unwrap<RawPayment[]>(rolesApi.get('/affiliate/payments/'));
       return data ? data.map(mapPayment) : [];
     } catch {
-      return mockTransactions;
+      return [];
     }
   },
 
@@ -579,8 +569,8 @@ export const affiliateService = {
       const payment = data?.find((p) => p.id === id);
       if (!payment) throw new Error('Transaction not found');
       return mapPayment(payment);
-    } catch {
-      return mockTransactions.find((tx) => tx.id === id) || mockTransactions[0];
+    } catch (error) {
+      throw error;
     }
   },
 
@@ -611,7 +601,7 @@ export const affiliateService = {
         clicks: item.clicks || 0,
       }));
     } catch {
-      return mockTrends;
+      return [];
     }
   },
 
@@ -628,7 +618,7 @@ export const affiliateService = {
         date: n.date || n.created_at || new Date().toISOString(),
       }));
     } catch {
-      return mockNotifications;
+      return [];
     }
   },
 

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/auth/usePermissions';
-import { attendanceService, AttendanceRecord, OfficeLocation, RegularizationRequest, Holiday } from '@/services/attendance';
+import { attendanceService, AttendanceRecord, AttendancePolicy, OfficeLocation, RegularizationRequest, Holiday } from '@/services/attendance';
 import toast from 'react-hot-toast';
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string; title: string }> = {
@@ -52,6 +52,24 @@ function parseCoordinate(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function formatLocation(latitude: number | string | null | undefined, longitude: number | string | null | undefined) {
+  const lat = parseCoordinate(latitude);
+  const lon = parseCoordinate(longitude);
+  if (lat === null || lon === null) return null;
+  return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+}
+
+function normalizeAttendanceRecord<T extends AttendanceRecord | null | undefined>(record: T): T {
+  if (!record) return record;
+  return {
+    ...record,
+    checkin_latitude: parseCoordinate(record.checkin_latitude),
+    checkin_longitude: parseCoordinate(record.checkin_longitude),
+    checkout_latitude: parseCoordinate(record.checkout_latitude),
+    checkout_longitude: parseCoordinate(record.checkout_longitude),
+  } as T;
+}
+
 function normalizeOfficeLocation(value: OfficeLocation | null | undefined): OfficeLocation | null {
   if (!value || value.configured === false) return null;
   const latitude = parseCoordinate(value.latitude);
@@ -62,7 +80,7 @@ function normalizeOfficeLocation(value: OfficeLocation | null | undefined): Offi
     name: value.name || 'Head Office',
     latitude,
     longitude,
-    radius_meters: Number(value.radius_meters) || 100,
+    radius_meters: Number(value.radius_meters) || 300,
   };
 }
 
@@ -80,6 +98,7 @@ export function AttendancePage() {
   const [office, setOffice] = useState<OfficeLocation | null>(null);
   const [myAttendance, setMyAttendance] = useState<AttendanceRecord[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [attendancePolicy, setAttendancePolicy] = useState<AttendancePolicy | null>(null);
   const [myRequests, setMyRequests] = useState<RegularizationRequest[]>([]);
   const [approvalsQueue, setApprovalsQueue] = useState<RegularizationRequest[]>([]);
 
@@ -141,7 +160,10 @@ export function AttendancePage() {
     try {
       // 1. Today status
       const todayRes = await attendanceService.getToday();
-      setTodayData(todayRes.data);
+      setTodayData({
+        ...todayRes.data,
+        record: normalizeAttendanceRecord(todayRes.data?.record),
+      });
       setIsWfh(todayRes.data?.work_mode === 'work_from_home');
 
       // 2. Office location
@@ -171,8 +193,10 @@ export function AttendancePage() {
 
       // 5. Monthly records
       const myAttRes = await attendanceService.getMyAttendance(month, year);
-      const myAttendancePayload = myAttRes.data as AttendanceRecord[] | { records?: AttendanceRecord[] };
-      setMyAttendance(Array.isArray(myAttendancePayload) ? myAttendancePayload : myAttendancePayload?.records || []);
+      const myAttendancePayload = myAttRes.data as AttendanceRecord[] | { records?: AttendanceRecord[]; policy?: AttendancePolicy };
+      const records = Array.isArray(myAttendancePayload) ? myAttendancePayload : myAttendancePayload?.records || [];
+      setMyAttendance(records.map((record) => normalizeAttendanceRecord(record)));
+      setAttendancePolicy(Array.isArray(myAttendancePayload) ? null : myAttendancePayload?.policy || null);
 
       // 6. Approvals (for managers)
       if (canApprove) {
@@ -332,6 +356,8 @@ export function AttendancePage() {
     const bbox = [lon - spread, lat - spread, lon + spread, lat + spread].join('%2C');
     return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`;
   }, [office]);
+  const checkinLocation = formatLocation(todayData?.record?.checkin_latitude, todayData?.record?.checkin_longitude);
+  const checkoutLocation = formatLocation(todayData?.record?.checkout_latitude, todayData?.record?.checkout_longitude);
 
   const attendanceLookup = useMemo(() => {
     const map: Record<string, AttendanceRecord> = {};
@@ -340,6 +366,19 @@ export function AttendancePage() {
     });
     return map;
   }, [myAttendance]);
+
+  const weekendDays = useMemo(
+    () => new Set((attendancePolicy?.weekend_days || ['saturday', 'sunday']).map((day) => day.toLowerCase())),
+    [attendancePolicy]
+  );
+
+  const isWeekendDate = useCallback(
+    (value: Date) => {
+      const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      return weekendDays.has(names[value.getDay()]);
+    },
+    [weekendDays]
+  );
 
   const holidayLookup = useMemo(() => {
     const map: Record<string, string> = {};
@@ -433,27 +472,9 @@ export function AttendancePage() {
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Clock Registry</CardTitle>
-                  </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* WFH Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-muted/30 border rounded-lg">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-semibold text-foreground">Working Remote (WFH) Mode</p>
-                        <p className="text-[10px] text-muted-foreground">Allows checking in or out from any GPS coordinate.</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isWfh}
-                        onChange={(e) => setIsWfh(e.target.checked)}
-                        className="rounded border-input text-primary focus:ring-0 cursor-pointer h-4 w-4"
-                        disabled={Boolean(todayData?.record?.check_in)}
-                      />
-                    </div>
-
                     {/* Geolocation Coordinate Inspector Card */}
-                    {!isWfh && office && (
+                    {false && !isWfh && office && (
                       <Card className="bg-muted/20 border-dashed">
                         <CardContent className="p-4 space-y-3">
                           <div className="flex items-center justify-between text-xs">
@@ -474,11 +495,11 @@ export function AttendancePage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                             <div className="p-2.5 bg-background border rounded-lg space-y-1">
                               <p className="text-[10px] font-bold text-muted-foreground uppercase">Target Office Location</p>
-                              <p className="font-mono text-[11px] text-foreground font-semibold">{office.name}</p>
+                              <p className="font-mono text-[11px] text-foreground font-semibold">{office!.name}</p>
                               <p className="font-mono text-[10px] text-muted-foreground">
-                                Coordinates: {Number(office.latitude).toFixed(6)}, {Number(office.longitude).toFixed(6)}
+                                Coordinates: {Number(office!.latitude).toFixed(6)}, {Number(office!.longitude).toFixed(6)}
                               </p>
-                              <p className="font-mono text-[10px] text-muted-foreground">Geofence Radius: {office.radius_meters}m</p>
+                              <p className="font-mono text-[10px] text-muted-foreground">Geofence Radius: {office!.radius_meters}m</p>
                             </div>
 
                             <div className="p-2.5 bg-background border rounded-lg space-y-1">
@@ -486,12 +507,12 @@ export function AttendancePage() {
                               {gps ? (
                                 <>
                                   <p className="font-mono text-[11px] text-foreground font-semibold">
-                                    {gps.latitude.toFixed(6)}, {gps.longitude.toFixed(6)}
+                                    {gps!.latitude.toFixed(6)}, {gps!.longitude.toFixed(6)}
                                   </p>
-                                  <p className="font-mono text-[10px] text-muted-foreground">Accuracy: ±{Math.round(gps.accuracy)}m</p>
+                                  <p className="font-mono text-[10px] text-muted-foreground">Accuracy: ±{Math.round(gps!.accuracy)}m</p>
                                   {gpsDistance !== null && (
                                     <p className="font-mono text-[10px] text-primary font-semibold">
-                                      Distance: {Math.round(gpsDistance)}m from center
+                                      Distance: {Math.round(gpsDistance!)}m from center
                                     </p>
                                   )}
                                 </>
@@ -536,8 +557,8 @@ export function AttendancePage() {
                           {todayData?.record?.check_in ? formatTime(todayData.record.check_in) : '--:--'}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {todayData?.record?.checkin_latitude
-                            ? `📍 Location logged: ${todayData.record.checkin_latitude.toFixed(4)}, ${todayData.record.checkin_longitude.toFixed(4)}`
+                          {checkinLocation
+                            ? `Location logged: ${checkinLocation}`
                             : isWfh
                             ? 'Logged as Remote check-in'
                             : 'No clock-in captured yet.'}
@@ -553,8 +574,8 @@ export function AttendancePage() {
                           {todayData?.record?.check_out ? formatTime(todayData.record.check_out) : '--:--'}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {todayData?.record?.checkout_latitude
-                            ? `📍 Location logged: ${todayData.record.checkout_latitude.toFixed(4)}, ${todayData.record.checkout_longitude.toFixed(4)}`
+                          {checkoutLocation
+                            ? `Location logged: ${checkoutLocation}`
                             : 'No clock-out captured yet.'}
                         </p>
                       </div>
@@ -611,7 +632,7 @@ export function AttendancePage() {
 
               {/* Office Location perimeter configuration */}
               <div className="space-y-6">
-                {canManage && (
+                {false && canManage && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">Configure Office Center Geofence</CardTitle>
@@ -670,7 +691,7 @@ export function AttendancePage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Office Location Map</CardTitle>
+                    <CardTitle className="text-base">System Settings Location Map</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-xs">
                     {office && officeMapUrl ? (
@@ -756,13 +777,22 @@ export function AttendancePage() {
                     <span className="font-medium text-purple-500">Overtime (OT)</span>
                   </div>
                 </div>
+                {attendancePolicy && (
+                  <div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-[10px] text-muted-foreground sm:grid-cols-4">
+                    <span>Shift: <b className="text-foreground">{attendancePolicy.shift_start} - {attendancePolicy.shift_end}</b></span>
+                    <span>Grace: <b className="text-foreground">{attendancePolicy.grace_minutes} min</b></span>
+                    <span>Half day below: <b className="text-foreground">{attendancePolicy.half_day_hours}h</b></span>
+                    <span>Weekends: <b className="text-foreground">{attendancePolicy.weekend_days?.join(', ') || 'none'}</b></span>
+                  </div>
+                )}
 
                 {/* Calendar Grid */}
                 <div className="border rounded-xl overflow-hidden bg-card text-xs">
                   {/* Headers */}
                   <div className="grid grid-cols-7 border-b bg-muted/40 font-semibold text-center text-muted-foreground">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, index) => {
-                      const isWeekendDay = index === 0 || index === 6;
+                      const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                      const isWeekendDay = weekendDays.has(names[index]);
                       return (
                         <div key={d} className={cn('py-2 border-r last:border-r-0', isWeekendDay && 'bg-muted/70')}>
                           {d}
@@ -781,7 +811,7 @@ export function AttendancePage() {
                       const holidayName = holidayLookup[dateString] || record?.holiday_name;
 
                       const cellDate = new Date(dateString);
-                      const isWeekendDay = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+                      const isWeekendDay = isWeekendDate(cellDate);
                       const cellToday = dateString === new Date().toISOString().split('T')[0];
 
                       let statusKey = record?.status;

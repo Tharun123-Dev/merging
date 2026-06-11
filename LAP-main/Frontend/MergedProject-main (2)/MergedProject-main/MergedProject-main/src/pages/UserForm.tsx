@@ -50,6 +50,57 @@ interface Permission {
   active: boolean;
 }
 
+const normalizePermissionKey = (value: unknown) =>
+  String(value || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+const permissionCodesFromUser = (user: Record<string, unknown>) => {
+  const raw =
+    user.explicitPermissions ||
+    user.assignedPermissions ||
+    user.userPermissions ||
+    user.assignedPermissionCodes ||
+    user.permissionCodes ||
+    user.permissions ||
+    [];
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        const record = item as Record<string, unknown>;
+        return record.permissionKey || record.code || record.name || record.authority || '';
+      }
+      return '';
+    })
+    .map(normalizePermissionKey)
+    .filter(Boolean);
+};
+
+const selectedPermissionIdsFromUser = (user: Record<string, unknown>, permissions: Permission[]) => {
+  const role = normalizePermissionKey(user.roleName || user.role || '');
+  const isAdminRole = role.includes('ADMIN') || role === 'SUPER_ADMIN' || role === 'SUPERADMIN';
+  const codes = permissionCodesFromUser(user);
+  if (codes.length > 0) {
+    const codeSet = new Set(codes);
+    const mappedIds = permissions
+      .filter((permission) => codeSet.has(normalizePermissionKey(permission.permissionKey)))
+      .map((permission) => permission.id);
+    if (!isAdminRole && mappedIds.length === permissions.length) {
+      return [];
+    }
+    return mappedIds;
+  }
+
+  const ids = Array.isArray(user.permissionIds) ? user.permissionIds : [];
+  const mappedIds = ids
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && permissions.some((permission) => permission.id === id));
+  if (!isAdminRole && mappedIds.length === permissions.length) {
+    return [];
+  }
+  return mappedIds;
+};
+
 interface UserFormProps {
   userId?: number | null;
   onClose?: () => void;
@@ -238,8 +289,8 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
             setDateOfBirth(String(pd.date_of_birth || ''));
             setAddress(String(pd.address || ''));
 
-            // Load user-level permissions, entities, departments
-            setSelectedPermissions(u.permissionIds || []);
+            // Load only explicitly assigned user-level permissions.
+            setSelectedPermissions(selectedPermissionIdsFromUser(u, fetchedPerms));
             setSelectedEntityIds(u.entityIds || []);
             setSelectedDepartmentIds(u.departmentIds || []);
           } catch (err) {

@@ -34,6 +34,7 @@ rolesApi.interceptors.request.use(
       url.startsWith('/system-settings') ||
       url.startsWith('/tasks') ||
       url.startsWith('/affiliate') ||
+      url.startsWith('/leads') ||
       url.startsWith('/tickets') ||
       url.startsWith('/revenue');
 

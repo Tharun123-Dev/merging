@@ -5,6 +5,7 @@ export interface SalaryStructure {
   employee?: string | number;
   employee_id: string;
   employee_name: string;
+  employee_email?: string;
   basic_salary: number;
   hra: number;
   special_allowance: number;
@@ -17,10 +18,14 @@ export interface SalaryStructure {
   ctc: number;
   basic: number;
   da: number;
+  transport: number;
+  medical: number;
+  other_allowance: number;
   pf_employee: number;
   esi_employee: number;
   pt: number;
   gross: number;
+  total_deductions: number;
   net_pay: number;
   basic_percent: number;
   hra_percent: number;
@@ -29,6 +34,9 @@ export interface SalaryStructure {
   esi_percent: number;
   effective_date: string;
   emp_code?: string;
+  earnings_breakdown?: Record<string, number>;
+  deductions_breakdown?: Record<string, number>;
+  calculation_summary?: Record<string, number | string | boolean>;
 }
 
 export interface PayrollRun {
@@ -81,6 +89,21 @@ export interface PayrollRunEntry {
   net_pay: number;
   adjustments: unknown[];
   employee_type?: string;
+  earnings_breakdown?: Record<string, number>;
+  deductions_breakdown?: Record<string, number>;
+  attendance_breakdown?: {
+    total_days: number;
+    working_days: number;
+    present_days: number;
+    lop_days: number;
+    holiday_count: number;
+    holiday_names: string[];
+    ot_hours: number;
+    extra_work_days: number;
+    extra_work_dates: unknown[];
+    comp_off_days: number;
+  };
+  calculation_summary?: Record<string, number | string | boolean>;
 }
 
 export interface Payslip {
@@ -126,5 +149,5 @@ export const payrollService = {
   getPayslipDetail: (month: number, year: number) =>
     rolesApi.get<Payslip>(`/payroll/payslips/${month}/${year}/`),
   getDashboardStats: () => rolesApi.get<PayrollDashboardStats>('/payroll/dashboard-stats/'),
-  listEmployees: () => rolesApi.get<unknown[]>('/employees/'),
+  listEmployees: () => rolesApi.get<unknown[]>('/users'),
 };

@@ -25,6 +25,17 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
 const fmt = (v: number | string | undefined | null) => `₹${parseFloat(String(v || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 const n = (v: number | string | undefined | null) => parseFloat(String(v || 0));
 const fmtD = (v: number | string | undefined | null) => parseFloat(String(v || 0)).toFixed(1);
+const moneyRows = (source: Record<string, number> | undefined, keys: Array<[string, string]>) =>
+  keys.map(([key, label]) => ({ key, label, value: n(source?.[key]) })).filter((row) => row.value !== 0);
+const javaUserId = (user: any) => String(user?.id ?? user?.userId ?? user?.user_id ?? '');
+const javaUserFirstName = (user: any) => String(user?.firstName ?? user?.first_name ?? '').trim();
+const javaUserLastName = (user: any) => String(user?.lastName ?? user?.last_name ?? '').trim();
+const javaUserName = (user: any) => {
+  const fullName = `${javaUserFirstName(user)} ${javaUserLastName(user)}`.trim();
+  return fullName || String(user?.name ?? user?.username ?? user?.email ?? 'User');
+};
+const javaUserEmpCode = (user: any) => String(user?.employeeId ?? user?.leadId ?? user?.profileData?.emp_code ?? user?.emp_code ?? '');
+const javaUserEmail = (user: any) => String(user?.email ?? user?.username ?? '');
 
 const FALLBACK_DEFAULTS = {
   basic_percent: 40,
@@ -338,10 +349,17 @@ export function PayrollPage() {
       toast.error('Employee, CTC, and effective date are required.');
       return;
     }
+    const selectedEmployee = employees.find((emp) => javaUserId(emp) === assignForm.employee);
     try {
       setSubmitting(true);
       const res = await payrollService.createSalary({
         employee: parseInt(assignForm.employee),
+        java_user_id: assignForm.employee,
+        employee_email: selectedEmployee ? javaUserEmail(selectedEmployee) : undefined,
+        employee_first_name: selectedEmployee ? javaUserFirstName(selectedEmployee) : undefined,
+        employee_last_name: selectedEmployee ? javaUserLastName(selectedEmployee) : undefined,
+        employee_username: selectedEmployee ? javaUserEmail(selectedEmployee) || javaUserName(selectedEmployee) : undefined,
+        employee_type: selectedEmployee?.profileData?.employee_type || selectedEmployee?.employeeType,
         effective_date: assignForm.effective_date,
         ctc: parseFloat(assignForm.ctc),
         basic_percent: parseFloat(assignForm.basic_percent),
@@ -397,8 +415,13 @@ export function PayrollPage() {
 
   const filteredStructures = useMemo(() => {
     if (!empFilter) return salaryStructuresList;
-    return salaryStructuresList.filter((s) => String(s.employee_id || s.employee) === empFilter);
-  }, [salaryStructuresList, empFilter]);
+    const selectedEmployee = employees.find((emp) => javaUserId(emp) === empFilter);
+    const selectedEmail = selectedEmployee ? javaUserEmail(selectedEmployee).toLowerCase() : '';
+    return salaryStructuresList.filter((s) => (
+      String(s.employee_id || s.employee) === empFilter ||
+      (!!selectedEmail && String(s.employee_email || '').toLowerCase() === selectedEmail)
+    ));
+  }, [salaryStructuresList, empFilter, employees]);
 
   // Runs Statistics
   const runTotals = useMemo(() => {
@@ -891,6 +914,7 @@ export function PayrollPage() {
                               const isLop = n(entry.lop_days) > 0;
 
                               return (
+                                <>
                                 <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/5">
                                   <td className="p-3">
                                     <p className="font-bold text-foreground text-sm">{entry.employee_name}</p>
@@ -927,6 +951,67 @@ export function PayrollPage() {
                                     </Button>
                                   </td>
                                 </tr>
+                                {isExpanded && (
+                                  <tr className="border-b bg-muted/10">
+                                    <td colSpan={6} className="p-4">
+                                      <div className="grid gap-4 md:grid-cols-3">
+                                        <div className="rounded-lg border bg-background p-3">
+                                          <p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Attendance Basis</p>
+                                          <div className="space-y-1 text-[11px]">
+                                            <div className="flex justify-between"><span>Calendar days</span><strong>{entry.attendance_breakdown?.total_days ?? entry.working_days}</strong></div>
+                                            <div className="flex justify-between"><span>Working days</span><strong>{entry.attendance_breakdown?.working_days ?? entry.working_days}</strong></div>
+                                            <div className="flex justify-between"><span>Paid present days</span><strong>{fmtD(entry.attendance_breakdown?.present_days ?? entry.present_days)}</strong></div>
+                                            <div className="flex justify-between text-orange-400"><span>LOP days</span><strong>{fmtD(entry.attendance_breakdown?.lop_days ?? entry.lop_days)}</strong></div>
+                                            <div className="flex justify-between"><span>Holidays</span><strong>{entry.attendance_breakdown?.holiday_count ?? entry.holiday_count}</strong></div>
+                                            <div className="flex justify-between"><span>OT hours</span><strong>{fmtD(entry.attendance_breakdown?.ot_hours ?? entry.ot_hours)}</strong></div>
+                                            <div className="flex justify-between"><span>Extra work days</span><strong>{fmtD(entry.attendance_breakdown?.extra_work_days ?? entry.extra_work_days)}</strong></div>
+                                            <div className="flex justify-between"><span>Comp-off adjusted</span><strong>{fmtD(entry.attendance_breakdown?.comp_off_days ?? entry.comp_off_days)}</strong></div>
+                                          </div>
+                                        </div>
+
+                                        <div className="rounded-lg border bg-background p-3">
+                                          <p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Earnings</p>
+                                          <div className="space-y-1 text-[11px]">
+                                            {moneyRows(entry.earnings_breakdown, [
+                                              ['basic', 'Basic'],
+                                              ['hra', 'HRA'],
+                                              ['da', 'DA'],
+                                              ['special_allowance', 'Special allowance'],
+                                              ['transport', 'Transport'],
+                                              ['medical', 'Medical'],
+                                              ['other_allowance', 'Other allowance'],
+                                              ['ot_pay', 'OT pay'],
+                                              ['extra_work_pay', 'Extra work pay'],
+                                              ['adjustment_credits', 'Adjustment credits'],
+                                            ]).map((row) => (
+                                              <div key={row.key} className="flex justify-between"><span>{row.label}</span><strong>{fmt(row.value)}</strong></div>
+                                            ))}
+                                            <div className="flex justify-between border-t pt-1 text-blue-400"><span>Gross</span><strong>{fmt(entry.gross)}</strong></div>
+                                          </div>
+                                        </div>
+
+                                        <div className="rounded-lg border bg-background p-3">
+                                          <p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Deductions & Net</p>
+                                          <div className="space-y-1 text-[11px]">
+                                            {moneyRows(entry.deductions_breakdown, [
+                                              ['pf_employee', 'PF employee'],
+                                              ['esi_employee', 'ESI employee'],
+                                              ['pt', 'Professional tax'],
+                                              ['tds', 'TDS'],
+                                              ['lop_deduction', 'LOP deduction'],
+                                              ['adjustment_deductions', 'Adjustment deductions'],
+                                            ]).map((row) => (
+                                              <div key={row.key} className="flex justify-between text-red-400"><span>{row.label}</span><strong>-{fmt(row.value)}</strong></div>
+                                            ))}
+                                            <div className="flex justify-between border-t pt-1 text-red-500"><span>Total deductions</span><strong>-{fmt(entry.total_deductions)}</strong></div>
+                                            <div className="flex justify-between rounded-md bg-emerald-500/10 p-2 text-emerald-400"><span>Net payable</span><strong>{fmt(entry.net_pay)}</strong></div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                </>
                               );
                             })}
                           </tbody>
@@ -960,8 +1045,8 @@ export function PayrollPage() {
                     >
                       <option value="">Filter by Employee</option>
                       {employees.map((e) => (
-                        <option key={e.user_id} value={e.user_id}>
-                          {e.first_name} {e.last_name} ({e.emp_code})
+                        <option key={javaUserId(e)} value={javaUserId(e)}>
+                          {javaUserName(e)} ({javaUserEmpCode(e) || javaUserEmail(e)})
                         </option>
                       ))}
                     </select>
@@ -983,6 +1068,7 @@ export function PayrollPage() {
                             <th className="p-3">Basic (Monthly)</th>
                             <th className="p-3">HRA (Monthly)</th>
                             <th className="p-3">Gross Salary</th>
+                            <th className="p-3">Deductions</th>
                             <th className="p-3">Base Takehome</th>
                           </tr>
                         </thead>
@@ -998,6 +1084,12 @@ export function PayrollPage() {
                               <td className="p-3">{fmt(s.basic)}</td>
                               <td className="p-3">{fmt(s.hra)}</td>
                               <td className="p-3 text-blue-400 font-semibold">{fmt(s.gross)}</td>
+                              <td className="p-3 text-red-500 font-semibold">
+                                <div>{fmt(s.total_deductions || s.deductions_breakdown?.total_deductions || 0)}</div>
+                                <div className="text-[9px] text-muted-foreground">
+                                  PF {fmt(s.pf_employee)} · ESI {fmt(s.esi_employee)} · PT {fmt(s.pt)}
+                                </div>
+                              </td>
                               <td className="p-3 text-emerald-400 font-bold bg-emerald-500/5 border-l-2 border-emerald-500/20">
                                 {fmt(s.net_pay)}
                               </td>
@@ -1246,8 +1338,8 @@ export function PayrollPage() {
                       >
                         <option value="">Choose employee...</option>
                         {employees.map((e) => (
-                          <option key={e.user_id} value={e.user_id}>
-                            {e.first_name} {e.last_name} ({e.emp_code})
+                          <option key={javaUserId(e)} value={javaUserId(e)}>
+                            {javaUserName(e)} ({javaUserEmpCode(e) || javaUserEmail(e)})
                           </option>
                         ))}
                       </select>
@@ -1376,6 +1468,25 @@ export function PayrollPage() {
                         <p className="font-semibold text-foreground">{fmt(assignPreview.basic)}</p>
                       </div>
 
+                      <div className="grid grid-cols-2 gap-2 text-[10px]">
+                        <div className="rounded-lg border bg-background/70 p-2">
+                          <span className="text-muted-foreground">HRA</span>
+                          <p className="font-semibold">{fmt(assignPreview.hra)}</p>
+                        </div>
+                        <div className="rounded-lg border bg-background/70 p-2">
+                          <span className="text-muted-foreground">DA</span>
+                          <p className="font-semibold">{fmt(assignPreview.da)}</p>
+                        </div>
+                        <div className="rounded-lg border bg-background/70 p-2">
+                          <span className="text-muted-foreground">Special</span>
+                          <p className="font-semibold">{fmt(assignPreview.special)}</p>
+                        </div>
+                        <div className="rounded-lg border bg-background/70 p-2">
+                          <span className="text-muted-foreground">Allowances</span>
+                          <p className="font-semibold">{fmt(assignPreview.transport + assignPreview.medical + assignPreview.other)}</p>
+                        </div>
+                      </div>
+
                       <div className="space-y-1 pb-2 border-b">
                         <p className="text-[10px] text-purple-400 uppercase">PF employee</p>
                         <p className="font-semibold text-purple-400">-{fmt(assignPreview.pf_emp)}</p>
@@ -1386,6 +1497,16 @@ export function PayrollPage() {
                         <p className="font-semibold text-blue-400">
                           {assignPreview.esi_exempt ? 'Exempt' : `-${fmt(assignPreview.esi_emp)}`}
                         </p>
+                      </div>
+
+                      <div className="space-y-1 pb-2 border-b">
+                        <p className="text-[10px] text-cyan-400 uppercase">Professional Tax</p>
+                        <p className="font-semibold text-cyan-400">-{fmt(assignPreview.pt)}</p>
+                      </div>
+
+                      <div className="space-y-1 pb-2 border-b">
+                        <p className="text-[10px] text-red-400 uppercase">Total Deductions</p>
+                        <p className="font-semibold text-red-400">-{fmt(assignPreview.total_deductions)}</p>
                       </div>
 
                       <div className="space-y-1.5 p-3.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-center">

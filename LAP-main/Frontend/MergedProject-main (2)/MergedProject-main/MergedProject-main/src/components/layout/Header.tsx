@@ -34,6 +34,7 @@ import {
 import { cn } from '@/lib/utils'
 import { DashboardQuickActionMenu } from '@/components/dashboard/DashboardQuickActionMenu'
 import { useToast } from '@/context/ToastContext'
+import { usePermissions } from '@/auth/usePermissions'
 
 const pathLabels: Record<string, string> = {
   '/': 'Dashboard',
@@ -56,9 +57,27 @@ export function Header() {
   const { theme, toggleTheme } = useTheme()
   const { info, success } = useToast()
   const { logout } = useAuth()
+  const { hasAnyPermission } = usePermissions()
   const navigate = useNavigate()
   const location = useLocation()
   const showQuickActions = location.pathname === '/' || location.pathname === '/reports'
+  const canUseQuickActions = hasAnyPermission([
+    'USER_CREATE',
+    'USER_MANAGE',
+    'LEAD_CREATE',
+    'CRM_CREATE',
+    'TASK_CREATE',
+    'TASK_MANAGE',
+    'PAYROLL_PROCESS',
+    'PAYROLL_MANAGE',
+    'SUPPORT_TICKET_CREATE',
+    'TICKET_CREATE',
+    'REPORT_CREATE',
+    'REPORT_VIEW',
+    'ANNOUNCEMENT_CREATE',
+    'NOTIFICATION_CREATE',
+    'FOLLOWUP_CREATE',
+  ])
   const pageTitle = pathLabels[location.pathname] ?? 'Module'
 
   const initials = tenant.userName
@@ -140,11 +159,11 @@ export function Header() {
         <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium">{tenant.role}</span>
       </div>
 
-      {showQuickActions ? (
+      {canUseQuickActions && showQuickActions ? (
         <div className="hidden sm:block">
           <DashboardQuickActionMenu />
         </div>
-      ) : (
+      ) : canUseQuickActions ? (
         <Button
           size="sm"
           className="hidden gap-1 sm:flex shadow-md"
@@ -156,7 +175,7 @@ export function Header() {
           <Plus className="h-4 w-4" />
           Quick Action
         </Button>
-      )}
+      ) : null}
 
       <Button variant="ghost" size="icon" className="relative" onClick={toggleTheme}>
         {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}

@@ -21,6 +21,9 @@ class SalaryStructureSerializer(serializers.ModelSerializer):
     total_deductions = serializers.SerializerMethodField()
     net_pay          = serializers.SerializerMethodField()
     monthly_ctc      = serializers.SerializerMethodField()
+    earnings_breakdown = serializers.SerializerMethodField()
+    deductions_breakdown = serializers.SerializerMethodField()
+    calculation_summary = serializers.SerializerMethodField()
 
     class Meta:
         model  = SalaryStructure
@@ -56,6 +59,9 @@ class SalaryStructureSerializer(serializers.ModelSerializer):
             'gross',
             'total_deductions',
             'net_pay',
+            'earnings_breakdown',
+            'deductions_breakdown',
+            'calculation_summary',
 
             'is_active',
             'created_by',
@@ -137,6 +143,39 @@ class SalaryStructureSerializer(serializers.ModelSerializer):
         except Exception:
             return 0.0
 
+    def get_earnings_breakdown(self, obj):
+        return {
+            'basic': self.get_basic(obj),
+            'hra': self.get_hra(obj),
+            'da': self.get_da(obj),
+            'special_allowance': self.get_special_allowance(obj),
+            'transport': round(float(obj.transport or 0), 2),
+            'medical': round(float(obj.medical or 0), 2),
+            'other_allowance': round(float(obj.other_allowance or 0), 2),
+            'gross': self.get_gross(obj),
+        }
+
+    def get_deductions_breakdown(self, obj):
+        return {
+            'pf_employee': self.get_pf_employee(obj),
+            'esi_employee': self.get_esi_employee(obj),
+            'pt': round(float(obj.pt or 0), 2),
+            'total_deductions': self.get_total_deductions(obj),
+            'net_pay': self.get_net_pay(obj),
+        }
+
+    def get_calculation_summary(self, obj):
+        return {
+            'ctc': round(float(obj.ctc or 0), 2),
+            'monthly_ctc': self.get_monthly_ctc(obj),
+            'basic_percent': round(float(obj.basic_percent or 0), 2),
+            'hra_percent': round(float(obj.hra_percent or 0), 2),
+            'da_percent': round(float(obj.da_percent or 0), 2),
+            'pf_percent': round(float(obj.pf_percent or 0), 2),
+            'esi_percent': round(float(obj.esi_percent or 0), 2),
+            'effective_date': str(obj.effective_date),
+        }
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -193,6 +232,10 @@ class PayrollEntrySerializer(serializers.ModelSerializer):
     department    = serializers.SerializerMethodField()
     adjustments   = AdjustmentSerializer(many=True, read_only=True)
     payroll_run   = PayrollRunSerializer(read_only=True)
+    earnings_breakdown = serializers.SerializerMethodField()
+    deductions_breakdown = serializers.SerializerMethodField()
+    attendance_breakdown = serializers.SerializerMethodField()
+    calculation_summary = serializers.SerializerMethodField()
 
     class Meta:
         model  = PayrollEntry
@@ -205,6 +248,7 @@ class PayrollEntrySerializer(serializers.ModelSerializer):
             'other_allowance', 'ot_pay',
             'pf_employee', 'esi_employee', 'pt', 'tds', 'lop_deduction',
             'gross', 'total_deductions', 'net_pay',
+            'earnings_breakdown', 'deductions_breakdown', 'attendance_breakdown', 'calculation_summary',
             'is_paid', 'payslip_url', 'adjustments', 'created_at',
         ]
 
@@ -218,3 +262,63 @@ class PayrollEntrySerializer(serializers.ModelSerializer):
     def get_department(self, obj):
         try:   return obj.employee.profile.department.name if obj.employee.profile.department else ''
         except: return ''
+
+    def get_earnings_breakdown(self, obj):
+        adjustments = list(obj.adjustments.all())
+        credits = sum(
+            float(adj.amount) for adj in adjustments
+            if adj.type in ('bonus', 'reimbursement', 'arrear')
+        )
+        return {
+            'basic': float(obj.basic),
+            'hra': float(obj.hra),
+            'da': float(obj.da),
+            'special_allowance': float(obj.special_allowance),
+            'transport': float(obj.transport),
+            'medical': float(obj.medical),
+            'other_allowance': float(obj.other_allowance),
+            'ot_pay': float(obj.ot_pay),
+            'extra_work_pay': float(obj.extra_work_pay),
+            'adjustment_credits': credits,
+            'gross': float(obj.gross),
+        }
+
+    def get_deductions_breakdown(self, obj):
+        adjustments = list(obj.adjustments.all())
+        adjustment_deductions = sum(
+            float(adj.amount) for adj in adjustments
+            if adj.type == 'deduction'
+        )
+        return {
+            'pf_employee': float(obj.pf_employee),
+            'esi_employee': float(obj.esi_employee),
+            'pt': float(obj.pt),
+            'tds': float(obj.tds),
+            'lop_deduction': float(obj.lop_deduction),
+            'adjustment_deductions': adjustment_deductions,
+            'total_deductions': float(obj.total_deductions),
+            'net_pay': float(obj.net_pay),
+        }
+
+    def get_attendance_breakdown(self, obj):
+        return {
+            'total_days': obj.total_days,
+            'working_days': obj.working_days,
+            'present_days': float(obj.present_days),
+            'lop_days': float(obj.lop_days),
+            'holiday_count': obj.holiday_count,
+            'holiday_names': obj.holiday_names,
+            'ot_hours': float(obj.ot_hours),
+            'extra_work_days': float(obj.extra_work_days),
+            'extra_work_dates': obj.extra_work_dates,
+            'comp_off_days': float(obj.comp_off_days),
+        }
+
+    def get_calculation_summary(self, obj):
+        per_day_gross = float(obj.gross / obj.working_days) if obj.working_days else 0
+        return {
+            'period': obj.payroll_run.period_label if obj.payroll_run_id else '',
+            'status': obj.payroll_run.status if obj.payroll_run_id else '',
+            'per_day_gross': round(per_day_gross, 2),
+            'formula': 'gross - (pf + esi + pt + tds + lop + adjustment deductions) + adjustment credits',
+        }

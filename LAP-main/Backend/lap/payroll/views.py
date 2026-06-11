@@ -128,6 +128,9 @@ def _serialize_structure(structure):
 
     pf_er     = round(basic * float(get_pf_employer_percent())  / 100, 2)
     esi_er    = 0.0 if esi_exempt else round(gross * float(get_esi_employer_percent()) / 100, 2)
+    employer_contrib = round(pf_er + esi_er, 2)
+    monthly_company_cost = round(gross + employer_contrib, 2)
+    ctc_difference = round(monthly - monthly_company_cost, 2)
 
     try:
         emp_name = structure.employee.get_full_name().strip() or structure.employee.username
@@ -143,6 +146,7 @@ def _serialize_structure(structure):
         'id':               structure.id,
         'employee':         structure.employee_id,
         'employee_name':    emp_name,
+        'employee_email':   structure.employee.email,
         'emp_code':         emp_code,
         'effective_date':   str(structure.effective_date),
         'ctc':              ctc,
@@ -170,6 +174,37 @@ def _serialize_structure(structure):
         'esi_exempt':       esi_exempt,
         'total_deductions': total_ded,
         'net_pay':          net_pay,
+        'earnings_breakdown': {
+            'basic': basic,
+            'hra': hra,
+            'da': da,
+            'special_allowance': special,
+            'transport': transport,
+            'medical': medical,
+            'other_allowance': other,
+            'gross': gross,
+        },
+        'deductions_breakdown': {
+            'pf_employee': pf_emp,
+            'esi_employee': esi_emp,
+            'pt': pt,
+            'tds': 0,
+            'lop_deduction': 0,
+            'total_deductions': total_ded,
+            'net_pay': net_pay,
+        },
+        'calculation_summary': {
+            'monthly_ctc': round(monthly, 2),
+            'monthly_gross': gross,
+            'employee_deductions': total_ded,
+            'net_pay': net_pay,
+            'employer_pf': pf_er,
+            'employer_esi': esi_er,
+            'employer_contribution': employer_contrib,
+            'monthly_company_cost': monthly_company_cost,
+            'ctc_difference': ctc_difference,
+            'esi_exempt': esi_exempt,
+        },
         # employer contributions
         'pf_employer':      pf_er,
         'esi_employer':     esi_er,
@@ -195,18 +230,82 @@ class SalaryStructureListView(APIView):
         return Response(data)
 
 
+def _base_payroll_role(role_value):
+    value = str(role_value or '').lower()
+    if 'super' in value and 'admin' in value:
+        return 'superadmin'
+    if 'admin' in value:
+        return 'admin'
+    if value.startswith('hr') or 'human_resource' in value:
+        return 'hr'
+    if 'manager' in value:
+        return 'manager'
+    if 'counsel' in value:
+        return 'counselor'
+    return 'employee'
+
+
+def _resolve_salary_employee(request):
+    tenant_id = get_tenant_id(request)
+    emp_id = request.data.get('employee')
+    java_user_id = request.data.get('java_user_id') or emp_id
+    email = str(
+        request.data.get('employee_email')
+        or request.data.get('email')
+        or ''
+    ).strip()
+
+    user = None
+    if email:
+        user = User.objects.filter(email=email, tenant_id=tenant_id).first()
+
+    if user is None and emp_id:
+        try:
+            user = User.objects.get(pk=emp_id, tenant_id=tenant_id)
+        except (User.DoesNotExist, ValueError, TypeError):
+            user = None
+
+    if user is not None:
+        return user
+
+    if not email and not java_user_id:
+        return None
+
+    username = str(request.data.get('employee_username') or email or f'java-user-{java_user_id}@lap.local').strip()
+    email = email or username
+    first_name = str(request.data.get('employee_first_name') or '').strip()
+    last_name = str(request.data.get('employee_last_name') or '').strip()
+    employee_type = str(request.data.get('employee_type') or 'regular').lower()
+    if employee_type not in {'regular', 'contract', 'parttime', 'intern'}:
+        employee_type = 'regular'
+
+    base_username = username
+    suffix = 1
+    while User.objects.filter(username=username).exists():
+        suffix += 1
+        username = f'{base_username}-{suffix}'
+
+    user = User(
+        username=username,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        role=_base_payroll_role(request.data.get('employee_role') or request.data.get('roleName')),
+        employee_type=employee_type,
+        tenant_id=tenant_id,
+        is_active=True,
+    )
+    user.set_unusable_password()
+    user.save()
+    return user
+
+
 class CreateSalaryStructureView(APIView):
     permission_classes = [make_permission('configure_salary')]
 
     def post(self, request):
-        emp_id = request.data.get('employee')
-
-        if not emp_id:
-            return Response({'error': 'employee is required'}, status=400)
-
-        try:
-            emp = User.objects.get(pk=emp_id, tenant_id=get_tenant_id(request))
-        except User.DoesNotExist:
+        emp = _resolve_salary_employee(request)
+        if not emp:
             return Response({'error': 'Employee not found'}, status=404)
 
         # Use system settings as defaults if not provided — zero hardcodes
@@ -266,7 +365,7 @@ class CreateSalaryStructureView(APIView):
         serializer = SalaryStructureSerializer(data=data)
         if serializer.is_valid():
             obj = serializer.save(created_by=request.user, tenant_id=get_tenant_id(request))
-            resp = dict(serializer.data)
+            resp = _serialize_structure(obj)
             if ctc_warning:
                 resp['ctc_warning'] = ctc_warning
             return Response(resp, status=201)

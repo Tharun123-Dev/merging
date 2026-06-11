@@ -75,16 +75,52 @@ class TaskSerializer(serializers.ModelSerializer):
         allow_null=True,
         write_only=True,
     )
+    assigned_to_email = serializers.EmailField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 'status', 'priority',
-            'startDate', 'dueDate', 'assignedTo', 'assignedBy', 'assigned_to_id',
+            'startDate', 'dueDate', 'assignedTo', 'assignedBy', 'assigned_to_id', 'assigned_to_email',
             'tags', 'attachments', 'relatedModule', 'archived',
             'comments', 'history', 'createdDate', 'created_at', 'updated_at',
         ]
         read_only_fields = ['assignedBy', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        email = (self.initial_data.get('assigned_to_email') or '').strip().lower()
+        if email and not attrs.get('assigned_to'):
+            request = self.context.get('request')
+            tenant_id = getattr(request.user, 'tenant_id', 'default') if request and request.user else 'default'
+            user, _ = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email,
+                    'tenant_id': str(tenant_id),
+                    'role': 'employee',
+                    'is_active': True,
+                },
+            )
+            if not user.has_usable_password():
+                user.set_unusable_password()
+            updates = []
+            if not user.has_usable_password():
+                updates.append('password')
+            if not user.is_active:
+                user.is_active = True
+                updates.append('is_active')
+            if getattr(user, 'tenant_id', None) != str(tenant_id):
+                user.tenant_id = str(tenant_id)
+                updates.append('tenant_id')
+            if user.username != email:
+                user.username = email
+                updates.append('username')
+            if updates:
+                user.save(update_fields=updates)
+            attrs['assigned_to'] = user
+        attrs.pop('assigned_to_email', None)
+        return attrs
 
     def get_assignedTo(self, obj):
         return user_payload(obj.assigned_to)

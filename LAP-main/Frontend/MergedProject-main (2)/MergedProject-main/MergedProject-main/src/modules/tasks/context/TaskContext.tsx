@@ -77,14 +77,24 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   }, [darkMode]);
 
   const normalizeMember = (member: any): Member => {
-    const nameStr = member.name || member.full_name || member.username || 'User';
+    const firstName = member.firstName || member.first_name || '';
+    const lastName = member.lastName || member.last_name || '';
+    const nameStr = member.name || member.full_name || member.username || `${firstName} ${lastName}`.trim() || member.email || 'User';
     return {
-      id: String(member.id),
+      id: String(member.id || member.userId || member.employeeId || member.email),
       name: nameStr,
-      role: member.role || 'Staff Member',
+      role: member.role || member.roleName || 'Staff Member',
       email: member.email || '',
       avatar: member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(nameStr)}&background=6366f1&color=fff`,
     };
+  };
+
+  const extractArray = (value: any): any[] => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.content)) return value.content;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.results)) return value.results;
+    return [];
   };
 
   const normalizeTaskForApi = (task: any): Record<string, any> => ({
@@ -94,7 +104,8 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     priority: task.priority,
     startDate: task.startDate,
     dueDate: task.dueDate,
-    assigned_to_id: task.assignedTo?.id || task.assignedToId,
+    assigned_to_id: task.assignedTo?.email ? undefined : task.assignedTo?.id || task.assignedToId,
+    assigned_to_email: task.assignedTo?.email || '',
     tags: task.tags || [],
     attachments: task.attachments || [],
     relatedModule: task.relatedModule || '',
@@ -112,7 +123,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
 
       let nextMembers = MEMBERS;
       if (membersRes.status === 'fulfilled') {
-        const remoteMembers = (membersRes.value.data || []).map(normalizeMember);
+        const remoteMembers = extractArray(membersRes.value.data).map(normalizeMember);
         if (remoteMembers.length > 0) {
           nextMembers = remoteMembers;
         }
