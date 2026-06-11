@@ -1,0 +1,272 @@
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { DashboardPage } from "@/pages/dashboard/DashboardPage";
+import { ReportsPage } from "@/pages/reports/ReportsPage";
+import { IntegrationsPage } from "@/pages/integrations/IntegrationsPage";
+import GoogleSuccessPage from "@/pages/google/GoogleSuccessPage";
+import GoogleErrorPage from "@/pages/google/GoogleErrorPage";
+import ZoomSuccessPage from "@/pages/zoom/ZoomSuccessPage";
+import { MessagesPage } from "@/pages/messages/MessagesPage";
+import { TicketsPage } from "@/pages/tickets/TicketsPage";
+import { MarketingPage } from "@/pages/marketing/MarketingPage";
+import { AttendancePage } from "@/pages/hrms/AttendancePage";
+import { LeavePage } from "@/pages/hrms/LeavePage";
+import { PayrollPage } from "@/pages/hrms/PayrollPage";
+import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { RevenuePage } from "@/pages/revenue/RevenuePage";
+import {
+  AccessControlLayout,
+  SettingsLayout,
+  HrmsLayout,
+  CrmLayout,
+  VendorLayout,
+} from "@/components/layout/ModuleTabsLayout";
+
+// Vendor / Procurement pages
+import { useAuth } from "@/auth/AuthContext";
+import { usePermissions } from "@/auth/usePermissions";
+import Vendors from "@/pages/vendor/Vendors";
+import VendorPortal from "@/pages/vendor/VendorPortal";
+import VendorAnalyticsDashboard from "@/pages/vendor/VendorAnalyticsDashboard";
+import Procurement from "@/pages/procurement/Procurement";
+import Contracts from "@/pages/procurement/Contracts";
+import Invoices from "@/pages/procurement/Invoices";
+import RiskCompliance from "@/pages/procurement/RiskCompliance";
+import Performance from "@/pages/procurement/Performance";
+import Requirements from "@/pages/procurement/Requirements";
+import Receipt from "@/pages/procurement/Receipt";
+
+// HRMS setting pages
+import BranchList from "@/pages/hrms/BranchList";
+import BranchForm from "@/pages/hrms/BranchForm";
+import ShiftList from "@/pages/hrms/ShiftList";
+import ShiftForm from "@/pages/hrms/ShiftForm";
+
+// CRM setting pages
+import LeadStageList from "@/pages/crm/LeadStageList";
+import LeadStageForm from "@/pages/crm/LeadStageForm";
+
+// Users module pages
+import UserList from "@/pages/UserList";
+import UserForm from "@/pages/UserForm";
+
+// Tenants module pages
+import TenantsList from "@/pages/TenantsList";
+import CreateTenant from "@/pages/CreateTenant";
+import TenantDetails from "@/pages/TenantDetails";
+
+// Leads module pages
+import LeadsList from "@/modules/leads/pages/LeadsList";
+import LeadCreate from "@/modules/leads/pages/LeadCreate";
+import LeadDetails from "@/modules/leads/pages/LeadDetails";
+import LeadPipeline from "@/modules/leads/pages/LeadPipeline";
+import LeadFollowups from "@/modules/leads/pages/LeadFollowups";
+import LeadsDashboard from "@/modules/leads/pages/LeadsDashboard";
+
+// Authentication & Public pages
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import RegisterUser from "@/pages/RegisterUser";
+import Unauthorized from "@/pages/Unauthorized";
+import PublicVerificationPage from "@/pages/PublicVerificationPage";
+import LandingPage from "@/pages/marketing/LandingPage";
+
+// Roles & Permissions pages
+import RoleList from "@/pages/RoleList";
+import RoleForm from "@/pages/RoleForm";
+import CreateRole from "@/pages/CreateRole";
+import RoleHierarchy from "@/pages/RoleHierarchy";
+import Permissions from "@/pages/Permissions";
+import CreatePermission from "@/pages/CreatePermission";
+import ProtectedRoute from "@/auth/ProtectedRoute";
+
+// Settings module pages
+import CompanyProfilePage from "@/pages/settings/CompanyProfilePage";
+import IdGenerationSettings from "@/pages/settings/IdGenerationSettings";
+import TemplatesPage from "@/pages/settings/TemplatesPage";
+import TemplateFormPage from "@/pages/settings/TemplateFormPage";
+import CertificatesList from "@/pages/settings/CertificatesList";
+import OnboardingRulesPage from "@/pages/settings/OnboardingRulesPage";
+import DynamicRoleFieldsPage from "@/pages/settings/DynamicRoleFieldsPage";
+import BillingPage from "@/pages/billing/BillingPage";
+import BusinessEntityList from "@/pages/settings/BusinessEntityList";
+import BusinessEntityForm from "@/pages/settings/BusinessEntityForm";
+import DepartmentList from "@/pages/settings/DepartmentList";
+import DepartmentForm from "@/pages/settings/DepartmentForm";
+import SelfReportsPage from "@/pages/reports/SelfReportsPage";
+import SystemSettingsPage from "@/pages/settings/SystemSettingsPage";
+
+
+function VendorProtectedRoute({ element }: { element: React.ReactElement }) {
+  const auth = useAuth();
+  const { role } = usePermissions();
+
+  if (auth.loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-cyan-500" />
+      </div>
+    );
+  }
+
+  if (!auth.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role !== 'VENDOR') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return element;
+}
+
+import AffiliateShell from "@/modules/affiliate/AffiliateShell";
+import TaskShell from "@/modules/tasks/TaskShell";
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      {/* Standalone Authentication and Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/register" element={<RegisterUser />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/verify/:identifier" element={<PublicVerificationPage />} />
+      <Route path="/landing/:slug" element={<LandingPage />} />
+      <Route path="/vendor-portal" element={<VendorProtectedRoute element={<VendorPortal />} />} />
+
+      {/* Main App Layout Routes */}
+      <Route element={<AppLayout />}>
+        <Route index element={<ProtectedRoute element={<DashboardPage />} />} />
+        
+        {/* Tenants routes */}
+        <Route path="tenants" element={<ProtectedRoute element={<TenantsList />} isPlatformAdminRequired={true} />} />
+        <Route path="create-tenant" element={<ProtectedRoute element={<CreateTenant />} isPlatformAdminRequired={true} />} />
+        <Route path="tenants/:id" element={<ProtectedRoute element={<TenantDetails />} isPlatformAdminRequired={true} />} />
+
+        {/* Access Control Module Routes (Wrapped in AccessControlLayout) */}
+        <Route element={<AccessControlLayout />}>
+          <Route path="users" element={<ProtectedRoute element={<UserList />} permission="USER_VIEW" />} />
+          <Route path="users/create" element={<ProtectedRoute element={<UserForm />} permission="USER_CREATE" />} />
+          <Route path="users/edit/:id" element={<ProtectedRoute element={<UserForm />} permission="USER_UPDATE" />} />
+          <Route path="users/manage" element={<Navigate to="/users" replace />} />
+          <Route path="roles" element={<ProtectedRoute element={<RoleList />} permission="ROLE_VIEW" />} />
+          <Route path="roles/create" element={<ProtectedRoute element={<RoleForm />} permission="ROLE_CREATE" />} />
+          <Route path="roles/edit/:id" element={<ProtectedRoute element={<RoleForm />} permission="ROLE_UPDATE" />} />
+          <Route path="roles/wizard" element={<ProtectedRoute element={<CreateRole />} permission="ROLE_CREATE" />} />
+          <Route path="role-hierarchy" element={<ProtectedRoute element={<RoleHierarchy />} permission="ROLE_VIEW" />} />
+          <Route path="permissions" element={<ProtectedRoute element={<Permissions />} permission="ROLE_VIEW" />} />
+          <Route path="permissions/create" element={<ProtectedRoute element={<CreatePermission />} permission="ROLE_CREATE" />} />
+        </Route>
+
+        {/* Settings Module Routes (Wrapped in SettingsLayout) */}
+        <Route element={<SettingsLayout />}>
+          <Route path="settings" element={<ProtectedRoute element={<SettingsPage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/company" element={<ProtectedRoute element={<CompanyProfilePage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/billing" element={<ProtectedRoute element={<BillingPage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/entities" element={<ProtectedRoute element={<BusinessEntityList />} permission="ROLE_VIEW" />} />
+          <Route path="settings/entities/create" element={<ProtectedRoute element={<BusinessEntityForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/entities/edit/:id" element={<ProtectedRoute element={<BusinessEntityForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/departments" element={<ProtectedRoute element={<DepartmentList />} permission="ROLE_VIEW" />} />
+          <Route path="settings/departments/create" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/departments/edit/:id" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/id-generation" element={<ProtectedRoute element={<IdGenerationSettings />} permission="ROLE_VIEW" />} />
+          <Route path="settings/templates" element={<ProtectedRoute element={<TemplatesPage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/templates/create" element={<ProtectedRoute element={<TemplateFormPage />} permission="ROLE_CREATE" />} />
+          <Route path="settings/templates/edit/:id" element={<ProtectedRoute element={<TemplateFormPage />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/certificates" element={<ProtectedRoute element={<CertificatesList />} permission="ROLE_VIEW" />} />
+          <Route path="settings/onboarding-rules" element={<ProtectedRoute element={<OnboardingRulesPage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/dynamic-role-fields" element={<ProtectedRoute element={<DynamicRoleFieldsPage />} permission="ROLE_VIEW" />} />
+          <Route path="settings/system" element={<ProtectedRoute element={<SystemSettingsPage />} permission="ROLE_VIEW" />} />
+        </Route>
+
+        {/* HRMS Module Routes (Wrapped in HrmsLayout) */}
+        <Route element={<HrmsLayout />}>
+          <Route path="attendance" element={<ProtectedRoute element={<AttendancePage />} module="hrms" />} />
+          <Route path="leave" element={<ProtectedRoute element={<LeavePage />} module="hrms" />} />
+          <Route path="payroll" element={<ProtectedRoute element={<PayrollPage />} module="hrms" />} />
+          <Route path="hrms/branches" element={<ProtectedRoute element={<BranchList />} module="hrms" />} />
+          <Route path="hrms/branches/create" element={<ProtectedRoute element={<BranchForm />} module="hrms" />} />
+          <Route path="hrms/branches/edit/:id" element={<ProtectedRoute element={<BranchForm />} module="hrms" />} />
+          <Route path="hrms/shifts" element={<ProtectedRoute element={<ShiftList />} module="hrms" />} />
+          <Route path="hrms/shifts/create" element={<ProtectedRoute element={<ShiftForm />} module="hrms" />} />
+          <Route path="hrms/shifts/edit/:id" element={<ProtectedRoute element={<ShiftForm />} module="hrms" />} />
+        </Route>
+
+        {/* CRM Module Routes (Wrapped in CrmLayout) */}
+        <Route element={<CrmLayout />}>
+          <Route path="leads" element={<ProtectedRoute element={<LeadsList />} module="crm" />} />
+          <Route path="leads/create" element={<ProtectedRoute element={<LeadCreate />} module="crm" />} />
+          <Route path="leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="crm" />} />
+          <Route path="leads/pipeline" element={<ProtectedRoute element={<LeadPipeline />} module="crm" />} />
+          <Route path="leads/followups" element={<ProtectedRoute element={<LeadFollowups />} module="crm" />} />
+          <Route path="leads/dashboard" element={<ProtectedRoute element={<LeadsDashboard />} module="crm" />} />
+          <Route path="crm/stages" element={<ProtectedRoute element={<LeadStageList />} module="crm" />} />
+          <Route path="crm/stages/create" element={<ProtectedRoute element={<LeadStageForm />} module="crm" />} />
+          <Route path="crm/stages/edit/:id" element={<ProtectedRoute element={<LeadStageForm />} module="crm" />} />
+        </Route>
+
+        {/* Vendor and Procurement routes (Wrapped in VendorLayout) */}
+        <Route element={<VendorLayout />}>
+          <Route path="vendor/vendors" element={<ProtectedRoute element={<Vendors />} module="VENDOR" />} />
+          <Route path="vendor/analytics" element={<ProtectedRoute element={<VendorAnalyticsDashboard />} module="VENDOR" />} />
+          <Route path="vendor/assets" element={<ProtectedRoute element={<Procurement />} module="VENDOR" />} />
+          <Route path="vendor/contracts" element={<ProtectedRoute element={<Contracts />} module="VENDOR" />} />
+          <Route path="vendor/invoices" element={<ProtectedRoute element={<Invoices />} module="VENDOR" />} />
+          <Route path="vendor/invoices/:id/receipt" element={<ProtectedRoute element={<Receipt />} module="VENDOR" />} />
+          <Route path="vendor/requirements" element={<ProtectedRoute element={<Requirements />} module="VENDOR" />} />
+          <Route path="vendor/performance" element={<ProtectedRoute element={<Performance />} module="VENDOR" />} />
+          <Route path="vendor/risk-compliance" element={<ProtectedRoute element={<RiskCompliance />} module="VENDOR" />} />
+          <Route path="vendor" element={<Navigate to="/vendor/analytics" replace />} />
+          <Route path="vendor-dashboard" element={<Navigate to="/vendor/analytics" replace />} />
+        </Route>
+
+        {/* Other routes */}
+        <Route path="integrations" element={<ProtectedRoute element={<IntegrationsPage />} module="website" />} />
+        <Route path="google/success" element={<ProtectedRoute element={<GoogleSuccessPage />} />} />
+        <Route path="google/error" element={<ProtectedRoute element={<GoogleErrorPage />} />} />
+        <Route path="zoom/success" element={<ProtectedRoute element={<ZoomSuccessPage />} />} />
+        <Route path="messages" element={<ProtectedRoute element={<MessagesPage />} />} />
+        <Route path="tickets" element={<ProtectedRoute element={<TicketsPage />} />} />
+        <Route path="affiliate" element={<ProtectedRoute element={<AffiliateShell />} module="crm" />} />
+        <Route path="marketing" element={<ProtectedRoute element={<MarketingPage variant="marketing" />} module="crm" />} />
+        <Route path="referrals" element={<ProtectedRoute element={<MarketingPage variant="referrals" />} module="crm" />} />
+        <Route path="reports" element={<ProtectedRoute element={<ReportsPage />} />} />
+        <Route path="self-reports" element={<ProtectedRoute element={<SelfReportsPage forcedScope="self" />} />} />
+        <Route path="tasks" element={<ProtectedRoute element={<TaskShell />} />} />
+        <Route path="revenue" element={<ProtectedRoute element={<RevenuePage />} />} />
+
+        {/* Legacy LAP redirects */}
+        <Route path="dashboard/attendance" element={<Navigate to="/attendance" replace />} />
+        <Route path="dashboard/payroll" element={<Navigate to="/payroll" replace />} />
+        <Route path="dashboard/leave" element={<Navigate to="/leave" replace />} />
+        <Route path="dashboard/reports" element={<Navigate to="/reports" replace />} />
+        <Route path="dashboard/self-reports" element={<Navigate to="/self-reports" replace />} />
+        <Route path="dashboard/support-tickets" element={<Navigate to="/tickets" replace />} />
+        <Route path="dashboard/employees" element={<Navigate to="/users" replace />} />
+        <Route path="dashboard/departments" element={<Navigate to="/settings/departments" replace />} />
+        <Route path="dashboard/settings" element={<Navigate to="/settings/company" replace />} />
+        <Route path="dashboard/settings/system" element={<Navigate to="/settings/system" replace />} />
+        <Route path="dashboard/permissions" element={<Navigate to="/permissions" replace />} />
+        <Route path="dashboard/tasks" element={<Navigate to="/tasks" replace />} />
+        <Route path="dashboard/leads/*" element={<Navigate to="/leads" replace />} />
+        <Route path="dashboard/revenue" element={<Navigate to="/revenue" replace />} />
+        <Route path="dashboard/affiliate" element={<Navigate to="/affiliate" replace />} />
+        <Route path="dashboard" element={<Navigate to="/" replace />} />
+
+        {/* Legacy vendor-dashboard redirects */}
+        <Route path="vendor-dashboard/analytics" element={<Navigate to="/vendor/analytics" replace />} />
+        <Route path="vendor-dashboard/vendors" element={<Navigate to="/vendor/vendors" replace />} />
+        <Route path="vendor-dashboard/invoices" element={<Navigate to="/vendor/invoices" replace />} />
+        <Route path="vendor-dashboard/requirements" element={<Navigate to="/vendor/requirements" replace />} />
+        <Route path="vendor-dashboard/contracts" element={<Navigate to="/vendor/contracts" replace />} />
+        <Route path="vendor-dashboard/performance" element={<Navigate to="/vendor/performance" replace />} />
+        <Route path="vendor-dashboard/risk-compliance" element={<Navigate to="/vendor/risk-compliance" replace />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
