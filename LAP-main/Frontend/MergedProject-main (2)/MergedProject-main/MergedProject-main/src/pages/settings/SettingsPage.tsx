@@ -13,6 +13,30 @@ const settingsCards = [
     color: 'text-primary border-primary/20 bg-primary/5'
   },
   {
+    id: 'employee-types',
+    label: 'Employee Types',
+    description: 'Manage employee types (e.g., Regular, Contractor).',
+    path: '/settings/employee-types',
+    icon: Grid,
+    color: 'text-primary border-primary/20 bg-primary/5'
+  },
+  {
+    id: 'designations',
+    label: 'Designations',
+    description: 'Manage job titles and designations.',
+    path: '/settings/designations',
+    icon: Award,
+    color: 'text-primary border-primary/20 bg-primary/5'
+  },
+  {
+    id: 'work-modes',
+    label: 'Work Modes',
+    description: 'Manage work arrangements (e.g., Office, Remote).',
+    path: '/settings/work-modes',
+    icon: Workflow,
+    color: 'text-primary border-primary/20 bg-primary/5'
+  },
+  {
     id: 'idformat',
     label: 'ID Format Settings',
     description: 'Customize auto-numbering formula prefixes, padding, and date tags.',
@@ -36,22 +60,6 @@ const settingsCards = [
     icon: Award,
     color: 'text-primary border-primary/20 bg-primary/5'
   },
-  {
-    id: 'workflow',
-    label: 'Onboarding Rules',
-    description: 'Configure trigger triggers, automated welcome emails, and document packages.',
-    path: '/settings/onboarding-rules',
-    icon: Workflow,
-    color: 'text-primary border-primary/20 bg-primary/5'
-  },
-  {
-    id: 'dynamic-fields',
-    label: 'Dynamic Custom Fields',
-    description: 'Define custom database fields and data validators for role profiles.',
-    path: '/settings/dynamic-role-fields',
-    icon: Grid,
-    color: 'text-primary border-primary/20 bg-primary/5'
-  }
 ];
 
 export function SettingsPage() {

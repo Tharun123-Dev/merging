@@ -127,7 +127,7 @@ export default function Permissions() {
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${
                           perm.active
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                         }`}
                       >
                         {perm.active ? 'Active' : 'Disabled'}

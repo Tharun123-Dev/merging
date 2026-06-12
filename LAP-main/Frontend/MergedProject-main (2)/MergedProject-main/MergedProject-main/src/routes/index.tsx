@@ -99,7 +99,7 @@ import DepartmentList from "@/pages/settings/DepartmentList";
 import DepartmentForm from "@/pages/settings/DepartmentForm";
 import SelfReportsPage from "@/pages/reports/SelfReportsPage";
 import SystemSettingsPage from "@/pages/settings/SystemSettingsPage";
-
+import { EmployeeTypeList, EmployeeTypeForm, DesignationList, DesignationForm, WorkModeList, WorkModeForm } from "@/pages/settings/LookupPages";
 
 function VendorProtectedRoute({ element }: { element: React.ReactElement }) {
   const auth = useAuth();
@@ -175,6 +175,15 @@ export function AppRoutes() {
           <Route path="settings/departments" element={<ProtectedRoute element={<DepartmentList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
           <Route path="settings/departments/create" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_CREATE" />} />
           <Route path="settings/departments/edit/:id" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/employee-types" element={<ProtectedRoute element={<EmployeeTypeList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/employee-types/create" element={<ProtectedRoute element={<EmployeeTypeForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/employee-types/edit/:id" element={<ProtectedRoute element={<EmployeeTypeForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/designations" element={<ProtectedRoute element={<DesignationList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/designations/create" element={<ProtectedRoute element={<DesignationForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/designations/edit/:id" element={<ProtectedRoute element={<DesignationForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/work-modes" element={<ProtectedRoute element={<WorkModeList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/work-modes/create" element={<ProtectedRoute element={<WorkModeForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/work-modes/edit/:id" element={<ProtectedRoute element={<WorkModeForm />} permission="ROLE_UPDATE" />} />
           <Route path="settings/id-generation" element={<ProtectedRoute element={<IdGenerationSettings />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
           <Route path="settings/templates" element={<ProtectedRoute element={<TemplatesPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
           <Route path="settings/templates/create" element={<ProtectedRoute element={<TemplateFormPage />} permission="ROLE_CREATE" />} />

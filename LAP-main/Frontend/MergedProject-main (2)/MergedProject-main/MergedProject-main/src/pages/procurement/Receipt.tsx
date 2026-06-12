@@ -103,7 +103,7 @@ export function Receipt() {
     return () => clearTimeout(timer);
   }, [id]);
 
-  if (loading) return <div className="p-8 text-center text-slate-400 font-sans">Loading receipt...</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground font-sans">Loading receipt...</div>;
   if (!invoice) return <div className="p-8 text-center text-red-400 font-sans">Receipt not found.</div>;
 
   // ── Helpers ───────────────────────────────────────────────
@@ -158,7 +158,7 @@ export function Receipt() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 font-sans print:bg-white print:p-0">
+    <div className="min-h-screen bg-background p-4 font-sans print:bg-white print:p-0">
       <div className="max-w-3xl mx-auto bg-white text-black shadow-2xl rounded-sm overflow-hidden print:shadow-none print:w-full print:max-w-none">
 
         {/* ── Receipt Content ── */}
@@ -314,14 +314,14 @@ export function Receipt() {
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-slate-100 p-4 flex justify-center gap-4 print:hidden border-t border-gray-200">
+        <div className="bg-accent p-4 flex justify-center gap-4 print:hidden border-t border-gray-200">
           <button onClick={handlePrint} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-full font-semibold transition-colors cursor-pointer text-xs sm:text-sm">
             <Printer size={18} /> PRINT
           </button>
-          <button onClick={handleShare} className="flex items-center gap-2 bg-slate-300 hover:bg-slate-400 text-slate-800 px-6 py-2 rounded-full font-semibold transition-colors cursor-pointer text-xs sm:text-sm">
+          <button onClick={handleShare} className="flex items-center gap-2 bg-muted hover:bg-slate-400 text-foreground px-6 py-2 rounded-full font-semibold transition-colors cursor-pointer text-xs sm:text-sm">
             <Share2 size={18} /> SHARE
           </button>
-          <button onClick={() => window.close()} className="flex items-center gap-2 bg-slate-300 hover:bg-slate-400 text-slate-800 px-6 py-2 rounded-full font-semibold transition-colors cursor-pointer text-xs sm:text-sm">
+          <button onClick={() => window.close()} className="flex items-center gap-2 bg-muted hover:bg-slate-400 text-foreground px-6 py-2 rounded-full font-semibold transition-colors cursor-pointer text-xs sm:text-sm">
             <X size={18} /> CLOSE
           </button>
         </div>

@@ -8,6 +8,7 @@ const actionPermissions: Record<QuickActionId, string[]> = {
   'add-user': ['USER_CREATE', 'USER_MANAGE'],
   'add-lead': ['LEAD_CREATE', 'CRM_CREATE'],
   'create-task': ['TASK_CREATE', 'TASK_MANAGE'],
+
   payroll: ['PAYROLL_PROCESS', 'PAYROLL_MANAGE'],
   ticket: ['SUPPORT_TICKET_CREATE', 'TICKET_CREATE'],
   report: ['REPORT_CREATE', 'REPORT_VIEW'],

@@ -13,22 +13,20 @@ const TABS: Record<string, TabItem[]> = {
   'access-control': [
     { label: 'Users Directory', path: '/users', permissions: ['USER_VIEW', 'USER_CREATE', 'USER_UPDATE'] },
     { label: 'Roles List', path: '/roles', permissions: ['ROLE_VIEW'] },
-    { label: 'Role Mapping', path: '/roles/mapping', permissions: ['ROLE_UPDATE'] },
     { label: 'Role Hierarchy', path: '/role-hierarchy', permissions: ['ROLE_VIEW'] },
     { label: 'Permissions Registry', path: '/permissions', permissions: ['ROLE_VIEW', 'ROLE_UPDATE'] },
   ],
   'settings': [
-    { label: 'Settings Home', path: '/settings', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Company Profile', path: '/settings/company', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Billing & Plans', path: '/settings/billing', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Business Entities', path: '/settings/entities', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Departments', path: '/settings/departments', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Employee Types', path: '/settings/employee-types', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Designations', path: '/settings/designations', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Work Modes', path: '/settings/work-modes', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'ID Formats', path: '/settings/id-generation', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Doc Templates', path: '/settings/templates', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
     { label: 'Certificates List', path: '/settings/certificates', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
-    { label: 'Onboarding Rules', path: '/settings/onboarding-rules', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
-    { label: 'Custom Fields', path: '/settings/dynamic-role-fields', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
-    { label: 'System Settings', path: '/settings/system', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
   ],
   'hrms': [
     { label: 'Attendance', path: '/attendance', permissions: ['ATTENDANCE_VIEW'] },
@@ -49,7 +47,6 @@ const TABS: Record<string, TabItem[]> = {
   'vendor': [
     { label: 'Vendor Dashboard', path: '/vendor/analytics' },
     { label: 'Vendor Directory', path: '/vendor/vendors' },
-    { label: 'Vendor Assets', path: '/vendor/assets' },
     { label: 'Requirements', path: '/vendor/requirements' },
     { label: 'Contracts', path: '/vendor/contracts' },
     { label: 'Invoices', path: '/vendor/invoices' },
