@@ -1,7 +1,7 @@
 import rolesApi from './rolesApi';
 
 export interface TicketType {
-  id: string;
+  id: number;
   name: string;
   code: string;
   description?: string;
@@ -19,7 +19,7 @@ export interface TicketNote {
 }
 
 export interface Ticket {
-  id: string;
+  id: number;
   ticket_no: string;
   subject: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -42,22 +42,20 @@ export interface TicketSummary {
   waiting_user: number;
   resolved: number;
   closed: number;
-  scope: 'all' | 'personal';
+  scope: 'all' | 'mine';
 }
 
 export const supportTicketsService = {
   getTypes: () => rolesApi.get<TicketType[]>('/support/ticket-types/'),
   createType: (data: { name: string; code: string; description?: string }) => 
     rolesApi.post<TicketType>('/support/ticket-types/', data),
-  deleteType: (id: string) => rolesApi.delete(`/support/ticket-types/${id}/`),
+  deleteType: (id: number) => rolesApi.delete(`/support/ticket-types/${id}/`),
   raise: (data: { issue_type: string; priority: string; subject: string; description: string }) => 
     rolesApi.post<Ticket>('/support/tickets/raise/', data),
   myTickets: () => rolesApi.get<Ticket[]>('/support/tickets/my/'),
   allTickets: (params?: Record<string, string>) => 
     rolesApi.get<Ticket[]>('/support/tickets/all/', { params }),
   summary: () => rolesApi.get<TicketSummary>('/support/tickets/summary/'),
-  action: (id: string, data: { action: string; note: string; is_internal?: boolean }) => 
+  action: (id: number, data: { action: string; note: string; is_internal?: boolean }) => 
     rolesApi.post<Ticket>(`/support/tickets/${id}/action/`, data),
-  requesterAction: (id: string, data: { action: string; note: string }) => 
-    rolesApi.post<Ticket>(`/support/tickets/${id}/requester-action/`, data),
 };

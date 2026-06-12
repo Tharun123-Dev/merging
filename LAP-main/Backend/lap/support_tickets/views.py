@@ -18,7 +18,7 @@ class SupportTicketTypeListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == 'GET':
             return [make_any_permission('raise_support_ticket', 'view_support_tickets', 'manage_support_tickets')()]
-        return [make_permission('manage_support_ticket_types')()]
+        return [make_any_permission('manage_support_tickets', 'manage_support_ticket_types')()]
 
     def get_queryset(self):
         tenant_id = get_tenant_id(self.request)

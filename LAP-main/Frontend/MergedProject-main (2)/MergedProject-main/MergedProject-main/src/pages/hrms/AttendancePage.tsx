@@ -285,7 +285,7 @@ export function AttendancePage() {
           return;
         }
       }
-      await attendanceService.checkIn(isWfh, currentGps?.latitude || null, currentGps?.longitude || null);
+      await attendanceService.checkIn(isWfh, currentGps?.latitude ?? null, currentGps?.longitude ?? null);
       toast.success('Successfully checked in!');
       await loadData(true);
     } catch (err) {
@@ -299,6 +299,10 @@ export function AttendancePage() {
   const handleCheckOut = async () => {
     try {
       setSubmitting(true);
+      if (!todayData?.record?.check_in || todayData?.record?.check_out) {
+        toast.error('No open check-in found. Please check in first or refresh the page.');
+        return;
+      }
       const currentGps = await getFreshGps();
       if (!isWfh && office) {
         if (!currentGps) return;
@@ -308,7 +312,7 @@ export function AttendancePage() {
           return;
         }
       }
-      const res = await attendanceService.checkOut(currentGps?.latitude || null, currentGps?.longitude || null);
+      const res = await attendanceService.checkOut(currentGps?.latitude ?? null, currentGps?.longitude ?? null);
       toast.success(`Checked out! Total hours: ${res.data.hours_worked || 0}h`);
       await loadData(true);
     } catch (err) {

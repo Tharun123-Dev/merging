@@ -36,6 +36,7 @@ rolesApi.interceptors.request.use(
       url.startsWith('/affiliate') ||
       url.startsWith('/leads') ||
       url.startsWith('/tickets') ||
+      url.startsWith('/support') ||
       url.startsWith('/revenue');
 
     config.baseURL = isLapRoute ? LAP_API_BASE : ROLES_API_BASE;

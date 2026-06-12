@@ -77,17 +77,12 @@ const permissionCodesFromUser = (user: Record<string, unknown>) => {
 };
 
 const selectedPermissionIdsFromUser = (user: Record<string, unknown>, permissions: Permission[]) => {
-  const role = normalizePermissionKey(user.roleName || user.role || '');
-  const isAdminRole = role.includes('ADMIN') || role === 'SUPER_ADMIN' || role === 'SUPERADMIN';
   const codes = permissionCodesFromUser(user);
   if (codes.length > 0) {
     const codeSet = new Set(codes);
     const mappedIds = permissions
       .filter((permission) => codeSet.has(normalizePermissionKey(permission.permissionKey)))
       .map((permission) => permission.id);
-    if (!isAdminRole && mappedIds.length === permissions.length) {
-      return [];
-    }
     return mappedIds;
   }
 
@@ -95,9 +90,6 @@ const selectedPermissionIdsFromUser = (user: Record<string, unknown>, permission
   const mappedIds = ids
     .map((id) => Number(id))
     .filter((id) => Number.isFinite(id) && permissions.some((permission) => permission.id === id));
-  if (!isAdminRole && mappedIds.length === permissions.length) {
-    return [];
-  }
   return mappedIds;
 };
 
@@ -126,42 +118,91 @@ const mockDepartments: Department[] = [
 
 const mockPermissions: Permission[] = [
   // Vendor Module
-  { id: 1, module: 'Vendor', action: 'View Vendors', permissionKey: 'VENDOR_VIEW', description: 'Can view vendors directory and profile details', active: true },
-  { id: 2, module: 'Vendor', action: 'Create Vendor', permissionKey: 'VENDOR_CREATE', description: 'Can onboard new vendors', active: true },
-  { id: 3, module: 'Vendor', action: 'Update Vendor', permissionKey: 'VENDOR_UPDATE', description: 'Can modify vendor profiles and contracts', active: true },
-  { id: 4, module: 'Vendor', action: 'Delete Vendor', permissionKey: 'VENDOR_DELETE', description: 'Can archive or remove vendor records', active: true },
-  { id: 5, module: 'Vendor', action: 'Approve Vendor Contracts', permissionKey: 'VENDOR_APPROVE', description: 'Can approve vendor agreements', active: true },
+  { id: 1001, module: 'Vendor', action: 'View Vendors', permissionKey: 'VENDOR_VIEW', description: 'Can view vendors directory and profile details', active: true },
+  { id: 1002, module: 'Vendor', action: 'Create Vendor', permissionKey: 'VENDOR_CREATE', description: 'Can onboard new vendors', active: true },
+  { id: 1003, module: 'Vendor', action: 'Update Vendor', permissionKey: 'VENDOR_UPDATE', description: 'Can modify vendor profiles and contracts', active: true },
+  { id: 1004, module: 'Vendor', action: 'Delete Vendor', permissionKey: 'VENDOR_DELETE', description: 'Can archive or remove vendor records', active: true },
+  { id: 1005, module: 'Vendor', action: 'Approve Vendor Contracts', permissionKey: 'VENDOR_APPROVE', description: 'Can approve vendor agreements', active: true },
 
   // PO Module
-  { id: 10, module: 'PO', action: 'View POs', permissionKey: 'PO_VIEW', description: 'Can view purchase orders', active: true },
-  { id: 11, module: 'PO', action: 'Create PO', permissionKey: 'PO_CREATE', description: 'Can draft and issue new purchase orders', active: true },
-  { id: 12, module: 'PO', action: 'Update PO', permissionKey: 'PO_UPDATE', description: 'Can edit pending purchase orders', active: true },
-  { id: 13, module: 'PO', action: 'Delete PO', permissionKey: 'PO_DELETE', description: 'Can cancel or remove purchase orders', active: true },
-  { id: 14, module: 'PO', action: 'Approve PO', permissionKey: 'PO_APPROVE', description: 'Can release purchase order budgets', active: true },
+  { id: 1010, module: 'PO', action: 'View POs', permissionKey: 'PO_VIEW', description: 'Can view purchase orders', active: true },
+  { id: 1011, module: 'PO', action: 'Create PO', permissionKey: 'PO_CREATE', description: 'Can draft and issue new purchase orders', active: true },
+  { id: 1012, module: 'PO', action: 'Update PO', permissionKey: 'PO_UPDATE', description: 'Can edit pending purchase orders', active: true },
+  { id: 1013, module: 'PO', action: 'Delete PO', permissionKey: 'PO_DELETE', description: 'Can cancel or remove purchase orders', active: true },
+  { id: 1014, module: 'PO', action: 'Approve PO', permissionKey: 'PO_APPROVE', description: 'Can release purchase order budgets', active: true },
 
   // Performance Module
-  { id: 20, module: 'Performance', action: 'View Reviews', permissionKey: 'PERFORMANCE_VIEW', description: 'Can view employee performance reviews', active: true },
-  { id: 21, module: 'Performance', action: 'Create Review', permissionKey: 'PERFORMANCE_CREATE', description: 'Can initiate a review cycle or submit feedback', active: true },
-  { id: 22, module: 'Performance', action: 'Update Review', permissionKey: 'PERFORMANCE_UPDATE', description: 'Can edit review drafts and parameters', active: true },
-  { id: 23, module: 'Performance', action: 'Delete Review', permissionKey: 'PERFORMANCE_DELETE', description: 'Can remove performance assessments', active: true },
+  { id: 1020, module: 'Performance', action: 'View Reviews', permissionKey: 'PERFORMANCE_VIEW', description: 'Can view employee performance reviews', active: true },
+  { id: 1021, module: 'Performance', action: 'Create Review', permissionKey: 'PERFORMANCE_CREATE', description: 'Can initiate a review cycle or submit feedback', active: true },
+  { id: 1022, module: 'Performance', action: 'Update Review', permissionKey: 'PERFORMANCE_UPDATE', description: 'Can edit review drafts and parameters', active: true },
+  { id: 1023, module: 'Performance', action: 'Delete Review', permissionKey: 'PERFORMANCE_DELETE', description: 'Can remove performance assessments', active: true },
 
   // Marketing Module
-  { id: 30, module: 'Marketing', action: 'View Campaigns', permissionKey: 'MARKETING_VIEW', description: 'Can view marketing campaigns and analytics', active: true },
-  { id: 31, module: 'Marketing', action: 'Create Campaign', permissionKey: 'MARKETING_CREATE', description: 'Can set up marketing leads and campaign pipelines', active: true },
-  { id: 32, module: 'Marketing', action: 'Update Campaign', permissionKey: 'MARKETING_UPDATE', description: 'Can tweak running campaigns and followup parameters', active: true },
-  { id: 33, module: 'Marketing', action: 'Delete Campaign', permissionKey: 'MARKETING_DELETE', description: 'Can clean up obsolete marketing materials', active: true },
+  { id: 1030, module: 'Marketing', action: 'View Campaigns', permissionKey: 'MARKETING_VIEW', description: 'Can view marketing campaigns and analytics', active: true },
+  { id: 1031, module: 'Marketing', action: 'Create Campaign', permissionKey: 'MARKETING_CREATE', description: 'Can set up marketing leads and campaign pipelines', active: true },
+  { id: 1032, module: 'Marketing', action: 'Update Campaign', permissionKey: 'MARKETING_UPDATE', description: 'Can tweak running campaigns and followup parameters', active: true },
+  { id: 1033, module: 'Marketing', action: 'Delete Campaign', permissionKey: 'MARKETING_DELETE', description: 'Can clean up obsolete marketing materials', active: true },
 
   // Tenant Module
-  { id: 40, module: 'Tenant', action: 'View Tenants', permissionKey: 'TENANT_VIEW', description: 'Can inspect active platform tenant spaces', active: true },
-  { id: 41, module: 'Tenant', action: 'Create Tenant', permissionKey: 'TENANT_CREATE', description: 'Can provision new tenant workspaces', active: true },
-  { id: 42, module: 'Tenant', action: 'Update Tenant', permissionKey: 'TENANT_UPDATE', description: 'Can update billing plans or features of tenants', active: true },
-  { id: 43, module: 'Tenant', action: 'Delete Tenant', permissionKey: 'TENANT_DELETE', description: 'Can suspend or delete tenant instances', active: true },
+  { id: 1040, module: 'Tenant', action: 'View Tenants', permissionKey: 'TENANT_VIEW', description: 'Can inspect active platform tenant spaces', active: true },
+  { id: 1041, module: 'Tenant', action: 'Create Tenant', permissionKey: 'TENANT_CREATE', description: 'Can provision new tenant workspaces', active: true },
+  { id: 1042, module: 'Tenant', action: 'Update Tenant', permissionKey: 'TENANT_UPDATE', description: 'Can update billing plans or features of tenants', active: true },
+  { id: 1043, module: 'Tenant', action: 'Delete Tenant', permissionKey: 'TENANT_DELETE', description: 'Can suspend or delete tenant instances', active: true },
 
   // User Module
-  { id: 50, module: 'User', action: 'View Users', permissionKey: 'USER_VIEW', description: 'Can browse the organization user directory', active: true },
-  { id: 51, module: 'User', action: 'Create User', permissionKey: 'USER_CREATE', description: 'Can onboard new employee profiles', active: true },
-  { id: 52, module: 'User', action: 'Update User', permissionKey: 'USER_UPDATE', description: 'Can modify user details and permission matrix', active: true },
-  { id: 53, module: 'User', action: 'Delete User', permissionKey: 'USER_DELETE', description: 'Can terminate user accounts and roles', active: true },
+  { id: 1050, module: 'User', action: 'View Users', permissionKey: 'USER_VIEW', description: 'Can browse the organization user directory', active: true },
+  { id: 1051, module: 'User', action: 'Create User', permissionKey: 'USER_CREATE', description: 'Can onboard new employee profiles', active: true },
+  { id: 1052, module: 'User', action: 'Update User', permissionKey: 'USER_UPDATE', description: 'Can modify user details and permission matrix', active: true },
+  { id: 1053, module: 'User', action: 'Delete User', permissionKey: 'USER_DELETE', description: 'Can terminate user accounts and roles', active: true },
+
+  // CRM / Leads Module
+  { id: 1060, module: 'CRM', action: 'View Leads', permissionKey: 'LEAD_VIEW', description: 'Can view leads pipeline', active: true },
+  { id: 1061, module: 'CRM', action: 'Create Lead', permissionKey: 'LEAD_CREATE', description: 'Can add new leads and student forms', active: true },
+  { id: 1062, module: 'CRM', action: 'Update Lead', permissionKey: 'LEAD_UPDATE', description: 'Can edit lead profiles', active: true },
+  { id: 1063, module: 'CRM', action: 'Delete Lead', permissionKey: 'LEAD_DELETE', description: 'Can delete lead records', active: true },
+  { id: 1064, module: 'CRM', action: 'Manage Leads', permissionKey: 'LEAD_MANAGE', description: 'Can manage pipeline settings and forms', active: true },
+  { id: 1065, module: 'CRM', action: 'View CRM', permissionKey: 'CRM_VIEW', description: 'Can view CRM dashboard', active: true },
+  { id: 1066, module: 'CRM', action: 'Manage CRM', permissionKey: 'CRM_MANAGE', description: 'Can configure CRM preferences', active: true },
+
+  // HRMS Module
+  { id: 1070, module: 'HRMS', action: 'View Attendance', permissionKey: 'ATTENDANCE_VIEW', description: 'Can view attendance records', active: true },
+  { id: 1071, module: 'HRMS', action: 'Create Attendance', permissionKey: 'ATTENDANCE_CREATE', description: 'Can perform check-in and check-out', active: true },
+  { id: 1072, module: 'HRMS', action: 'Update Attendance', permissionKey: 'ATTENDANCE_UPDATE', description: 'Can update attendance logs', active: true },
+  { id: 1073, module: 'HRMS', action: 'Manage Attendance', permissionKey: 'ATTENDANCE_MANAGE', description: 'Can approve regularization requests', active: true },
+  { id: 1074, module: 'HRMS', action: 'View Leaves', permissionKey: 'LEAVE_VIEW', description: 'Can view leave applications', active: true },
+  { id: 1075, module: 'HRMS', action: 'Create Leave', permissionKey: 'LEAVE_CREATE', description: 'Can request leave of absence', active: true },
+  { id: 1076, module: 'HRMS', action: 'Update Leave', permissionKey: 'LEAVE_UPDATE', description: 'Can edit leave applications', active: true },
+  { id: 1077, module: 'HRMS', action: 'Manage Leaves', permissionKey: 'LEAVE_MANAGE', description: 'Can approve or reject leaves', active: true },
+  { id: 1078, module: 'HRMS', action: 'View Payroll', permissionKey: 'PAYROLL_VIEW', description: 'Can view salary structures and payslips', active: true },
+  { id: 1079, module: 'HRMS', action: 'Manage Payroll', permissionKey: 'PAYROLL_MANAGE', description: 'Can configure payroll processing', active: true },
+
+  // Tasks Module
+  { id: 1080, module: 'Tasks', action: 'View Tasks', permissionKey: 'TASK_VIEW', description: 'Can view general tasks list', active: true },
+  { id: 1081, module: 'Tasks', action: 'Create Task', permissionKey: 'TASK_CREATE', description: 'Can create new tasks', active: true },
+  { id: 1082, module: 'Tasks', action: 'Update Task', permissionKey: 'TASK_UPDATE', description: 'Can modify task parameters', active: true },
+  { id: 1083, module: 'Tasks', action: 'Manage Tasks', permissionKey: 'TASK_MANAGE', description: 'Can assign and delete tasks', active: true },
+
+  // Support Tickets Module
+  { id: 1090, module: 'Tickets', action: 'View Tickets', permissionKey: 'SUPPORT_TICKET_VIEW', description: 'Can view support tickets list', active: true },
+  { id: 1091, module: 'Tickets', action: 'Create Ticket', permissionKey: 'SUPPORT_TICKET_CREATE', description: 'Can raise new support tickets', active: true },
+  { id: 1092, module: 'Tickets', action: 'Update Ticket', permissionKey: 'SUPPORT_TICKET_UPDATE', description: 'Can update support ticket actions', active: true },
+  { id: 1093, module: 'Tickets', action: 'Manage Tickets', permissionKey: 'SUPPORT_TICKET_MANAGE', description: 'Can manage ticket categories and assignments', active: true },
+
+  // Affiliate Module
+  { id: 1100, module: 'Affiliate', action: 'View Affiliate', permissionKey: 'AFFILIATE_VIEW', description: 'Can view affiliate information', active: true },
+  { id: 1101, module: 'Affiliate', action: 'Manage Affiliate', permissionKey: 'AFFILIATE_MANAGE', description: 'Can manage affiliate programs', active: true },
+
+  // Reports Module
+  { id: 1110, module: 'Reports', action: 'View Reports', permissionKey: 'REPORT_VIEW', description: 'Can view global analysis reports', active: true },
+  { id: 1111, module: 'Reports', action: 'View Self Reports', permissionKey: 'REPORT_SELF', description: 'Can view personal reports', active: true },
+  { id: 1112, module: 'Reports', action: 'Export Reports', permissionKey: 'REPORT_EXPORT', description: 'Can export report data', active: true },
+
+  // Revenue Module
+  { id: 1200, module: 'Revenue', action: 'View Revenue', permissionKey: 'REVENUE_VIEW', description: 'Can view company revenue analytics', active: true },
+
+  // Settings Module
+  { id: 1300, module: 'Settings', action: 'View Settings', permissionKey: 'SETTINGS_VIEW', description: 'Can view company settings', active: true },
+  { id: 1301, module: 'Settings', action: 'Manage Settings', permissionKey: 'SETTINGS_MANAGE', description: 'Can manage system policies', active: true },
 ];
 
 export default function UserForm({ userId, onClose }: UserFormProps = {}) {
@@ -240,7 +281,23 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
           console.warn('Backend permissions endpoint failed, falling back to mock permissions:', err);
           fetchedPerms = mockPermissions;
         }
-        setAvailablePermissions(fetchedPerms);
+
+        // Merge backend fetched permissions with any missing mock permissions
+        const mergedPerms = [...fetchedPerms];
+        const fetchedKeys = new Set(fetchedPerms.map(p => normalizePermissionKey(p.permissionKey)));
+        mockPermissions.forEach(mockP => {
+          const mockKey = normalizePermissionKey(mockP.permissionKey);
+          if (!fetchedKeys.has(mockKey)) {
+            const maxId = mergedPerms.reduce((max, p) => p.id > max ? p.id : max, 0);
+            mergedPerms.push({
+              ...mockP,
+              id: maxId + 1
+            });
+            fetchedKeys.add(mockKey);
+          }
+        });
+
+        setAvailablePermissions(mergedPerms);
 
         // Fetch Business Entities
         let fetchedEntities: BusinessEntity[] = [];

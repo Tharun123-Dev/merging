@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import rolesApi from '@/services/rolesApi';
 
 export interface User {
   id: string | number;
@@ -104,8 +105,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    let isMounted = true;
+
+    const syncCurrentUser = async () => {
+      if (!token) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await rolesApi.get<{ id: string | number; email?: string; role?: string; permissions?: string[] }>('/users/me/');
+        if (!isMounted) return;
+
+        const nextPermissions = Array.isArray(res.data?.permissions) ? res.data.permissions : [];
+        setPermissions(nextPermissions);
+        localStorage.setItem('permissions', JSON.stringify(nextPermissions));
+
+        if (res.data?.role) {
+          localStorage.setItem('role', res.data.role);
+          setUser((prev) => (prev ? { ...prev, role: res.data.role } : prev));
+        }
+      } catch {
+        // Keep the permissions loaded from the token/localStorage when the
+        // profile sync is temporarily unavailable.
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    syncCurrentUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const login = (newToken: string, newPermissions: string[], newModules: string[], newTenantCode?: string, newRole?: string) => {
     let finalPermissions = newPermissions;

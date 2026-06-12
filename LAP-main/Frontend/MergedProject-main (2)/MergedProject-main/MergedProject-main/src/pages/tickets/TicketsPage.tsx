@@ -61,7 +61,7 @@ export function TicketsPage() {
   const canRaise = hasPermission('raise_support_ticket');
   const canTrack = hasPermission('view_support_tickets');
   const canManage = hasPermission('manage_support_tickets');
-  const canManageTypes = hasPermission('manage_support_ticket_types');
+  const canManageTypes = hasPermission('manage_support_ticket_types') || hasPermission('manage_support_tickets');
 
   const [tab, setTab] = useState<'raise' | 'my' | 'all' | 'types'>(
     canRaise ? 'raise' : canManage ? 'all' : 'my'
@@ -203,13 +203,14 @@ export function TicketsPage() {
       toast.error('A tracking note is required for this action');
       return;
     }
+    if (!canManage) {
+      toast.error('Only support managers can update tickets');
+      return;
+    }
     try {
       setUpdating(true);
       const payload = { action, note, is_internal: internal };
-      const res = canManage
-        ? await supportTicketsService.action(selected.id, payload)
-        : await supportTicketsService.requesterAction(selected.id, { action, note });
-
+      const res = await supportTicketsService.action(selected.id, payload);
       setSelected(res.data);
       toast.success('Ticket updated successfully');
       setNote('');
@@ -602,64 +603,70 @@ export function TicketsPage() {
                       </div>
 
                       {/* Actions Panel */}
-                      <div className="border-t pt-4 space-y-3">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <label className="font-semibold text-muted-foreground">Action</label>
-                            <select
-                              value={action}
-                              onChange={(e) => setAction(e.target.value)}
-                              className="w-full bg-background border border-input text-foreground rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                              disabled={updating}
-                            >
-                              <option value="note">Add Note</option>
-                              {canManage && tab === 'all' && (
-                                <>
-                                  <option value="assign">Assign to Me</option>
-                                  <option value="in_progress">In Progress</option>
-                                  <option value="waiting_user">Waiting on User</option>
-                                  <option value="resolve">Resolve</option>
-                                </>
-                              )}
-                              <option value="close">Close Ticket</option>
-                              <option value="reopen">Reopen Ticket</option>
-                            </select>
+                      {canManage ? (
+                        <div className="border-t pt-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label className="font-semibold text-muted-foreground">Action</label>
+                              <select
+                                value={action}
+                                onChange={(e) => setAction(e.target.value)}
+                                className="w-full bg-background border border-input text-foreground rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+                                disabled={updating}
+                              >
+                                <option value="note">Add Note</option>
+                                {tab === 'all' && (
+                                  <>
+                                    <option value="assign">Assign to Me</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="waiting_user">Waiting on User</option>
+                                    <option value="resolve">Resolve</option>
+                                  </>
+                                )}
+                                <option value="close">Close Ticket</option>
+                                <option value="reopen">Reopen Ticket</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="font-semibold text-muted-foreground">Note / Comment</label>
+                              <Input
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="Action update summary..."
+                                disabled={updating}
+                              />
+                            </div>
                           </div>
 
-                          <div className="space-y-1">
-                            <label className="font-semibold text-muted-foreground">Note / Comment</label>
-                            <Input
-                              value={note}
-                              onChange={(e) => setNote(e.target.value)}
-                              placeholder="Action update summary..."
-                              disabled={updating}
-                            />
-                          </div>
+                          {tab === 'all' && (
+                            <label className="flex items-center gap-2 text-muted-foreground cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={internal}
+                                onChange={(e) => setInternal(e.target.checked)}
+                                className="rounded border-input text-primary focus:ring-0"
+                                disabled={updating}
+                              />
+                              <span>Internal Agent Note Only</span>
+                            </label>
+                          )}
+
+                          <Button
+                            onClick={handleUpdateTicket}
+                            disabled={updating}
+                            className="w-full flex items-center justify-center gap-1.5"
+                            size="sm"
+                          >
+                            {updating && <Loader2 className="h-3 w-3 animate-spin" />}
+                            Submit Update
+                          </Button>
                         </div>
-
-                        {canManage && tab === 'all' && (
-                          <label className="flex items-center gap-2 text-muted-foreground cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={internal}
-                              onChange={(e) => setInternal(e.target.checked)}
-                              className="rounded border-input text-primary focus:ring-0"
-                              disabled={updating}
-                            />
-                            <span>Internal Agent Note Only</span>
-                          </label>
-                        )}
-
-                        <Button
-                          onClick={handleUpdateTicket}
-                          disabled={updating}
-                          className="w-full flex items-center justify-center gap-1.5"
-                          size="sm"
-                        >
-                          {updating && <Loader2 className="h-3 w-3 animate-spin" />}
-                          Submit Update
-                        </Button>
-                      </div>
+                      ) : (
+                        <div className="border-t pt-4 text-xs text-muted-foreground">
+                          Ticket tracking is read-only for requesters. Support managers can assign, resolve, close, or add internal notes from the all-tickets queue.
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ) : (

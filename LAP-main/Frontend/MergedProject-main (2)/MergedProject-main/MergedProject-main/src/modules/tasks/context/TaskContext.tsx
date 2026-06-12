@@ -5,6 +5,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/auth/AuthContext';
+import { usePermissions } from '@/auth/usePermissions';
 import { Member, Task, Notification } from '../types';
 import { MEMBERS, INITIAL_TASKS, INITIAL_NOTIFICATIONS } from '../data/mockData';
 import { tasksService } from '../services/tasksService';
@@ -51,8 +52,20 @@ interface TaskProviderProps {
   children: React.ReactNode;
 }
 
+const TASK_PERMISSION_KEYS = ['view_tasks', 'view_team_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task'];
+
+function normalizePermission(value: string) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
 export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const { user, token } = useAuth();
+  const { permissions } = usePermissions();
+
+  const hasTaskViewPermission = permissions.some((permission) => 
+    TASK_PERMISSION_KEYS.includes(normalizePermission(permission))
+  ) || permissions.includes('*');
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('task-theme');
     return saved ? saved === 'dark' : false;
@@ -113,6 +126,29 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   });
 
   const loadTaskData = async () => {
+    if (!hasTaskViewPermission) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setTasks(INITIAL_TASKS);
+        setMembers(MEMBERS);
+        setNotifications(INITIAL_NOTIFICATIONS);
+        if (user) {
+          setCurrentUser({
+            id: String(user.id),
+            name: localStorage.getItem('name') || user.email.split('@')[0] || 'User',
+            role: String(user.role || 'Staff').replace(/_/g, ' '),
+            email: user.email || '',
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email.split('@')[0])}&background=6366f1&color=fff`
+          });
+        } else if (MEMBERS[2]) {
+          setCurrentUser(MEMBERS[2]);
+        }
+        setErrorState(null);
+        setIsLoading(false);
+      }, 300);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const [tasksRes, membersRes, notificationsRes] = await Promise.allSettled([
@@ -165,7 +201,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     if (token) {
       loadTaskData();
     }
-  }, [token, user?.id]);
+  }, [token, user?.id, hasTaskViewPermission]);
 
   const triggerLoading = (callback: () => void) => {
     setIsLoading(true);
@@ -176,6 +212,29 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   };
 
   const addTask = async (newTask: Omit<Task, 'id' | 'createdDate' | 'archived' | 'comments' | 'history'>) => {
+    if (!hasTaskViewPermission) {
+      setIsLoading(true);
+      setTimeout(() => {
+        const createdTask: Task = {
+          ...newTask,
+          id: `TSK-${Math.floor(1000 + Math.random() * 9000)}`,
+          createdDate: new Date().toISOString().split('T')[0],
+          archived: false,
+          comments: [],
+          history: [{
+            id: `h-${Math.random().toString(36).substring(2, 11)}`,
+            user: currentUser.name,
+            action: 'Task Created',
+            details: `Task created locally`,
+            timestamp: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }]
+        };
+        setTasks(prev => [createdTask, ...prev]);
+        setIsLoading(false);
+      }, 300);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await tasksService.createTask(normalizeTaskForApi(newTask));
@@ -190,6 +249,15 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   };
 
   const updateTask = async (updatedTask: Task) => {
+    if (!hasTaskViewPermission) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+        setIsLoading(false);
+      }, 300);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await tasksService.updateTask(updatedTask.id, normalizeTaskForApi(updatedTask));
@@ -208,6 +276,19 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   };
 
   const deleteTask = async (taskId: string) => {
+    if (!hasTaskViewPermission) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+        if (selectedTaskId === taskId) {
+          setSelectedTaskId(null);
+          setActivePage('tasks-list');
+        }
+        setIsLoading(false);
+      }, 300);
+      return;
+    }
+
     setIsLoading(true);
     try {
       await tasksService.deleteTask(taskId);
@@ -251,6 +332,21 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   };
 
   const archiveTask = async (taskId: string) => {
+    if (!hasTaskViewPermission) {
+      setTasks(prev => prev.map(t => t.id === taskId ? {
+        ...t,
+        archived: true,
+        history: [...(t.history || []), {
+          id: `h-${Math.random().toString(36).substring(2, 11)}`,
+          user: currentUser.name,
+          action: 'Task Archived',
+          details: 'Archived task locally',
+          timestamp: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]
+      } : t));
+      return;
+    }
+
     try {
       const res = await tasksService.archiveTask(taskId);
       setTasks(prev => prev.map(t => t.id === taskId ? res.data : t));
@@ -261,6 +357,28 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
 
   const addComment = async (taskId: string, content: string) => {
     if (!content.trim()) return;
+    if (!hasTaskViewPermission) {
+      const newComment = {
+        id: `c-${Math.random().toString(36).substring(2, 11)}`,
+        author: currentUser.name,
+        avatar: currentUser.avatar,
+        content,
+        timestamp: 'Just now'
+      };
+      setTasks(prev => prev.map(t => t.id === taskId ? {
+        ...t,
+        comments: [...(t.comments || []), newComment],
+        history: [...(t.history || []), {
+          id: `h-${Math.random().toString(36).substring(2, 11)}`,
+          user: currentUser.name,
+          action: 'Comment Added',
+          details: 'Added a discussion comment locally',
+          timestamp: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]
+      } : t));
+      return;
+    }
+
     try {
       const res = await tasksService.addComment(taskId, content);
       setTasks(prev => prev.map(t => t.id === taskId ? res.data : t));
@@ -281,6 +399,11 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   };
 
   const markAllNotificationsRead = async () => {
+    if (!hasTaskViewPermission) {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      return;
+    }
+
     try {
       await tasksService.markNotificationsRead();
     } catch (error) {

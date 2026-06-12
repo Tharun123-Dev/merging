@@ -237,13 +237,13 @@ export function AppRoutes() {
         <Route path="google/error" element={<ProtectedRoute element={<GoogleErrorPage />} />} />
         <Route path="zoom/success" element={<ProtectedRoute element={<ZoomSuccessPage />} />} />
         <Route path="messages" element={<ProtectedRoute element={<MessagesPage />} />} />
-        <Route path="tickets" element={<ProtectedRoute element={<TicketsPage />} permissions={["SUPPORT_TICKET_VIEW", "SUPPORT_TICKET_CREATE", "SUPPORT_VIEW"]} />} />
+        <Route path="tickets" element={<ProtectedRoute element={<TicketsPage />} permissions={["raise_support_ticket", "view_support_tickets", "manage_support_tickets", "manage_support_ticket_types"]} />} />
         <Route path="affiliate" element={<ProtectedRoute element={<AffiliateShell />} module="crm" permissions={["AFFILIATE_VIEW", "AFFILIATE_MANAGE"]} />} />
         <Route path="marketing" element={<ProtectedRoute element={<MarketingPage variant="marketing" />} module="crm" permissions={["LEAD_VIEW", "CRM_VIEW"]} />} />
         <Route path="referrals" element={<ProtectedRoute element={<MarketingPage variant="referrals" />} module="crm" permissions={["LEAD_VIEW", "CRM_VIEW"]} />} />
         <Route path="reports" element={<ProtectedRoute element={<ReportsPage />} permissions={["REPORT_VIEW", "REPORTS_VIEW"]} />} />
         <Route path="self-reports" element={<ProtectedRoute element={<SelfReportsPage forcedScope="self" />} permissions={["REPORT_SELF", "SELF_REPORTS_VIEW"]} />} />
-        <Route path="tasks" element={<ProtectedRoute element={<TaskShell />} permissions={["TASK_VIEW", "TASK_CREATE", "TASK_UPDATE", "TASK_MANAGE"]} />} />
+        <Route path="tasks" element={<ProtectedRoute element={<TaskShell />} />} />
         <Route path="revenue" element={<ProtectedRoute element={<RevenuePage />} permission="REVENUE_VIEW" />} />
 
         {/* Legacy LAP redirects */}

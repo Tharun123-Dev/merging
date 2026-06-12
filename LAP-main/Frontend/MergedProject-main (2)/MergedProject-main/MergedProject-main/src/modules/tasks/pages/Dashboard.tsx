@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTasks } from '../context/TaskContext';
 import { Task } from '../types';
+import { usePermissions } from '@/auth/usePermissions';
 import {
   ListTodo,
   Clock,
@@ -17,6 +18,8 @@ import {
 
 export default function Dashboard() {
   const { tasks, currentUser, setActivePage, navigateToDetails } = useTasks();
+  const { permissions, hasPermission } = usePermissions();
+  const hasExplicitTaskPermissions = permissions.some((permission) => ['view_tasks', 'view_team_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task'].includes(String(permission || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')));
 
   const activeTasks = tasks.filter(t => !t.archived);
 
@@ -172,15 +175,17 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button 
-            onClick={() => setActivePage('create-task')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/10 transition-all hover:scale-[1.02] cursor-pointer"
-          >
-            Create New Task
-            <ArrowUpRight size={14} />
-          </button>
-        </div>
+        {( !hasExplicitTaskPermissions || hasPermission('create_task')) && (
+          <div className="flex items-center gap-2.5">
+            <button 
+              onClick={() => setActivePage('create-task')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/10 transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              Create New Task
+              <ArrowUpRight size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Grid of Stats */}

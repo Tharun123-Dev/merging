@@ -13,6 +13,13 @@ import {
   Sun, Moon, Bell, ChevronDown, AlertOctagon,
   Loader2, Sparkles
 } from 'lucide-react';
+import { usePermissions } from '@/auth/usePermissions';
+
+const TASK_PERMISSION_KEYS = ['view_tasks', 'view_team_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task'];
+
+function normalizePermission(value: string) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
 
 function TaskAppContent() {
   const {
@@ -20,26 +27,43 @@ function TaskAppContent() {
     currentUser, setCurrentUser, members, notifications,
     isLoading, setIsLoading, errorState, setErrorState, tasks
   } = useTasks();
+  const { permissions, hasPermission } = usePermissions();
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showDemoTools, setShowDemoTools] = useState(false);
 
+  const hasExplicitTaskPermissions = useMemo(
+    () => permissions.some((permission) => TASK_PERMISSION_KEYS.includes(normalizePermission(permission))),
+    [permissions]
+  );
+
   const unreadCount = notifications.filter(n => !n.read).length;
   const navItems = useMemo(() => ([
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'tasks-list', label: 'Task List' },
-    { id: 'kanban', label: 'Kanban' },
-    { id: 'calendar', label: 'Calendar' },
-    { id: 'my-tasks', label: 'My Tasks' },
-    { id: 'create-task', label: 'Create Task' },
-    { id: 'notifications', label: 'Notifications', badge: unreadCount },
+    { id: 'tasks-list', label: 'Task List', permissions: TASK_PERMISSION_KEYS },
+    { id: 'kanban', label: 'Kanban', permissions: ['view_team_tasks'] },
+    { id: 'calendar', label: 'Calendar', permissions: ['view_tasks', 'view_team_tasks'] },
+    { id: 'my-tasks', label: 'My Tasks', permissions: ['view_tasks'] },
+    { id: 'create-task', label: 'Create Task', permissions: ['create_task'] },
+    { id: 'notifications', label: 'Notifications', badge: unreadCount, permissions: ['view_tasks', 'view_team_tasks'] },
   ]), [unreadCount]);
 
-  useEffect(() => {
-    if (!navItems.some((item) => item.id === activePage) && activePage !== 'task-details') {
-      setActivePage(navItems[0]?.id || 'my-tasks');
+  const visibleNavItems = useMemo(() => {
+    if (!hasExplicitTaskPermissions) {
+      return navItems;
     }
-  }, [activePage, navItems, setActivePage]);
+
+    return navItems.filter((item) => {
+      if (!item.permissions || item.permissions.length === 0) return true;
+      return item.permissions.some((permission) => hasPermission(permission));
+    });
+  }, [hasExplicitTaskPermissions, hasPermission, navItems]);
+
+  useEffect(() => {
+    if (!visibleNavItems.some((item) => item.id === activePage) && activePage !== 'task-details') {
+      setActivePage(visibleNavItems[0]?.id || 'dashboard');
+    }
+  }, [activePage, setActivePage, visibleNavItems]);
 
   const renderActivePage = () => {
     if (errorState) {
@@ -167,7 +191,7 @@ function TaskAppContent() {
           </div>
 
           <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const active = activePage === item.id || (item.id === 'tasks-list' && activePage === 'task-details');
               return (
                 <button
