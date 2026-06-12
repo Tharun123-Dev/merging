@@ -142,6 +142,7 @@
 
 @layer components {
   .crm-workspace {
+<<<<<<< HEAD
     position: relative;
     isolation: isolate;
     color: var(--color-foreground);
@@ -164,11 +165,15 @@
   .crm-workspace > * {
     position: relative;
     z-index: 1;
+=======
+    color: var(--color-foreground);
+>>>>>>> 6c736b9 (updated)
   }
 
   .crm-workspace .rounded-3xl,
   .crm-workspace .rounded-2xl,
   .crm-workspace .rounded-xl {
+<<<<<<< HEAD
     border-radius: var(--radius-lg);
   }
 
@@ -179,6 +184,9 @@
     box-shadow:
       0 1px 2px color-mix(in srgb, black 6%, transparent),
       0 12px 36px color-mix(in srgb, black 8%, transparent);
+=======
+    border-radius: var(--radius-md);
+>>>>>>> 6c736b9 (updated)
   }
 
   .crm-workspace input,
@@ -205,6 +213,7 @@
     vertical-align: middle;
   }
 
+<<<<<<< HEAD
   .crm-workspace thead th {
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -214,6 +223,8 @@
     border-bottom-width: 0;
   }
 
+=======
+>>>>>>> 6c736b9 (updated)
   .crm-workspace .custom-scrollbar,
   .crm-workspace [class*="overflow-x"] {
     scrollbar-width: thin;
