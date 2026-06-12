@@ -59,6 +59,12 @@ function formatLocation(latitude: number | string | null | undefined, longitude:
   return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 }
 
+function formatShiftLabel(shiftType?: string | null) {
+  if (shiftType === 'night') return 'Night shift';
+  if (shiftType === 'day') return 'Day shift';
+  return 'Attendance';
+}
+
 function normalizeAttendanceRecord<T extends AttendanceRecord | null | undefined>(record: T): T {
   if (!record) return record;
   return {
@@ -122,6 +128,10 @@ export function AttendancePage() {
 
   // Forms
   const [officeForm, setOfficeForm] = useState({ name: '', latitude: '', longitude: '', radius_meters: '300' });
+  const currentAttendance = todayData?.record || null;
+  const currentEmployeeLabel = currentAttendance?.employee_name || 'My attendance';
+  const currentEmployeeCode = currentAttendance?.emp_code || null;
+  const currentShiftLabel = formatShiftLabel(currentAttendance?.shift_type);
   const [regularizeForm, setRegularizeForm] = useState({ date: '', check_in: '', check_out: '', reason: '' });
   const [showRegModal, setShowRegModal] = useState(false);
 
@@ -250,16 +260,6 @@ export function AttendancePage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [month, year, approvalsFilter]);
-
-  useEffect(() => {
-    if (office && !isWfh) {
-      fetchGps();
-    }
-  }, [office, isWfh]);
 
   const gpsDistance = useMemo(() => {
     if (!gps || !office) return null;
@@ -473,6 +473,14 @@ export function AttendancePage() {
           </Button>
         }
       />
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="rounded-full border bg-muted/40 px-3 py-1 font-semibold text-foreground">{currentEmployeeLabel}</span>
+        {currentEmployeeCode && <span className="rounded-full border bg-muted/20 px-3 py-1 font-mono">{currentEmployeeCode}</span>}
+        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-semibold text-primary">
+          {currentShiftLabel}
+        </span>
+      </div>
 
       {/* Tabs */}
       <div className="flex p-1 bg-muted rounded-xl w-fit border border-border">
@@ -914,11 +922,18 @@ export function AttendancePage() {
 
                           {/* Detail information inside cell */}
                           <div className="mt-1 space-y-0.5">
-                            {checkInFormatted && (
-                              <p className="text-[9px] text-foreground font-medium">
-                                {checkInFormatted} → {checkOutFormatted || '?'}
-                              </p>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-emerald-600">
+                                In
+                              </span>
+                              <p className="text-[9px] text-foreground font-medium">{checkInFormatted || '--:--'}</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="rounded-full border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-rose-600">
+                                Out
+                              </span>
+                              <p className="text-[9px] text-foreground font-medium">{checkOutFormatted || '--:--'}</p>
+                            </div>
                             {hasOT && (
                               <p className="text-[8px] text-purple-500 font-bold">
                                 OT +{record?.ot_hours}h

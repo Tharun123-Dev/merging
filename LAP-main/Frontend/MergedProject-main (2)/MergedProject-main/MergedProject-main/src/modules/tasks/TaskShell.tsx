@@ -221,7 +221,7 @@ function TaskAppContent() {
           <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-xs flex items-center justify-center">
             <div className="bg-card p-5 rounded-2xl border border-border shadow-soft-lg flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="text-xs font-bold text-foreground">Synchronizing database...</span>
+              <span className="text-xs font-bold text-foreground">Loading...</span>
             </div>
           </div>
         )}
