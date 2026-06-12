@@ -139,3 +139,44 @@
 @utility input-field {
   @apply flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] disabled:cursor-not-allowed disabled:opacity-50 text-foreground;
 }
+
+@layer components {
+  .crm-workspace {
+    color: var(--color-foreground);
+  }
+
+  .crm-workspace .rounded-3xl,
+  .crm-workspace .rounded-2xl,
+  .crm-workspace .rounded-xl {
+    border-radius: var(--radius-md);
+  }
+
+  .crm-workspace input,
+  .crm-workspace select,
+  .crm-workspace textarea {
+    max-width: 100%;
+    color: var(--color-foreground);
+    background-color: var(--color-card);
+    border-color: var(--color-border);
+  }
+
+  .crm-workspace select {
+    min-width: 0;
+  }
+
+  .crm-workspace table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .crm-workspace th,
+  .crm-workspace td {
+    vertical-align: middle;
+  }
+
+  .crm-workspace .custom-scrollbar,
+  .crm-workspace [class*="overflow-x"] {
+    scrollbar-width: thin;
+  }
+}

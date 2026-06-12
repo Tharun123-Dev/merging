@@ -29,6 +29,8 @@ PERMISSION_MODULE_ALIASES = {
     'affiliate': ['AFFILIATE'],
     'leads': ['LEAD', 'CRM'],
     'lead': ['LEAD', 'CRM'],
+    'lead_analytics': ['LEAD_ANALYTICS', 'LEAD', 'CRM'],
+    'lead_forms': ['LEAD_FORM', 'LEAD_FORMS', 'LEAD', 'CRM'],
     'followups': ['LEAD', 'CRM'],
     'followup': ['LEAD', 'CRM'],
     'tasks': ['TASK'],
@@ -307,10 +309,6 @@ class User(AbstractUser):
                 return _expand_permission_codes(ALL_CODES)
             if java_permissions:
                 return _expand_permission_codes(java_permissions)
-            external_role = getattr(self, '_java_base_role', None)
-            if external_role:
-                from utils.permission_registry import ROLE_DEFAULTS
-                return _expand_permission_codes(ROLE_DEFAULTS.get(external_role, []))
             return []
 
         from utils.models import Permission, UserPermissionOverride
@@ -335,24 +333,6 @@ class User(AbstractUser):
                 for permission in java_permissions
             ):
                 return True
-            if _module_allows_permission(getattr(self, '_java_modules', None), code):
-                return True
-
-            from utils.models import RolePermission
-
-            external_role = getattr(self, '_java_base_role', None)
-            if external_role:
-                if RolePermission.objects.filter(
-                    role=external_role,
-                    permission__code=code,
-                    is_granted=True,
-                ).exists():
-                    return True
-
-                from utils.permission_registry import ROLE_DEFAULTS
-                if code in ROLE_DEFAULTS.get(external_role, []):
-                    return True
-
             java_token = getattr(self, '_java_token', None)
             if java_token:
                 from utils.java_bridge import check_permission

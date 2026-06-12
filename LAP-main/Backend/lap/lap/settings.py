@@ -79,19 +79,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'lap.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DB_ENGINE'),
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-        'OPTIONS': {
-            'ssl': {'ca': None},
-        },
+if os.getenv('LAP_USE_LOCAL_SQLITE', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / os.getenv('SQLITE_DB_NAME', 'db.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.getenv('DB_ENGINE'),
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
+            'OPTIONS': {
+                'ssl': {'ca': None},
+            },
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -193,6 +201,20 @@ JAVA_AUTH_BASE_URL = os.getenv(
     'JAVA_AUTH_BASE_URL',
     'http://100.85.146.60:8080/api/auth',
 )
+
+JAVA_API_BASE_URL = os.getenv(
+    'JAVA_API_BASE_URL',
+    'http://100.85.146.60:8080',
+)
+
+JAVA_USERS_PATHS = [
+    value.strip()
+    for value in os.getenv(
+        'JAVA_USERS_PATHS',
+        'api/users,api/auth/users,users,api/user',
+    ).split(',')
+    if value.strip()
+]
 
 LAP_TRUST_TENANT_HEADER_AUTH = os.getenv(
     'LAP_TRUST_TENANT_HEADER_AUTH',

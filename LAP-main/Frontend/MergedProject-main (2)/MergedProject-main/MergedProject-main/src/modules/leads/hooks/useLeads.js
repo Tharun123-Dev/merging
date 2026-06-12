@@ -8,9 +8,12 @@ const getDynamicValue = (lead, acceptedLabels) => {
   )?.value;
 };
 
-const normalizeLead = (lead) => ({
+export const normalizeLead = (lead) => ({
   ...lead,
   name: lead.full_name || lead.name || '',
+  course: lead.course || getDynamicValue(lead, ['course', 'course of interest', 'program']) || 'N/A',
+  source: lead.source || getDynamicValue(lead, ['source', 'lead source']) || 'N/A',
+  internal_notes: lead.internal_notes || getDynamicValue(lead, ['internal notes', 'notes']) || '',
   company: lead.company || getDynamicValue(lead, ['company', 'company name', 'organization']) || '',
   priority: lead.priority || getDynamicValue(lead, ['priority', 'lead priority']) || 'Medium',
   assigned_to: lead.assigned_to || (

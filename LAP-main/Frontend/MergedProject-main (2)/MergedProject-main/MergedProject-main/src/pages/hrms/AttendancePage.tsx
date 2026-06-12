@@ -155,6 +155,47 @@ export function AttendancePage() {
     );
   }, []);
 
+  const getFreshGps = useCallback((): Promise<{ latitude: number; longitude: number; accuracy: number } | null> => {
+    if (isWfh || !office) return Promise.resolve(gps);
+    if (!navigator.geolocation) {
+      const message = 'Geolocation is not supported by your browser.';
+      setLocError(message);
+      toast.error(message);
+      return Promise.resolve(null);
+    }
+
+    setLocLoading(true);
+    setLocError(null);
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const nextGps = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          };
+          setGps(nextGps);
+          setLocLoading(false);
+          resolve(nextGps);
+        },
+        (err) => {
+          const messages: Record<number, string> = {
+            1: 'Location permission denied. Please allow location access and try again.',
+            2: 'Location unavailable. Check your GPS/network.',
+            3: 'Location request timed out. Try again.',
+          };
+          const message = messages[err.code] || 'Failed to get location.';
+          setLocError(message);
+          setGps(null);
+          setLocLoading(false);
+          toast.error(message);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }, [gps, isWfh, office]);
+
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -233,13 +274,18 @@ export function AttendancePage() {
   }, [gpsDistance, office, isWfh]);
 
   const handleCheckIn = async () => {
-    if (!isWfh && office && !withinRadius) {
-      toast.error('Cannot check-in: You are outside the allowed office perimeter.');
-      return;
-    }
     try {
       setSubmitting(true);
-      await attendanceService.checkIn(isWfh, gps?.latitude || null, gps?.longitude || null);
+      const currentGps = await getFreshGps();
+      if (!isWfh && office) {
+        if (!currentGps) return;
+        const distance = haversineMetres(currentGps.latitude, currentGps.longitude, Number(office.latitude), Number(office.longitude));
+        if (distance > office.radius_meters) {
+          toast.error('Cannot check-in: You are outside the allowed office perimeter.');
+          return;
+        }
+      }
+      await attendanceService.checkIn(isWfh, currentGps?.latitude || null, currentGps?.longitude || null);
       toast.success('Successfully checked in!');
       await loadData(true);
     } catch (err) {
@@ -251,13 +297,18 @@ export function AttendancePage() {
   };
 
   const handleCheckOut = async () => {
-    if (!isWfh && office && !withinRadius) {
-      toast.error('Cannot check-out: You are outside the allowed office perimeter.');
-      return;
-    }
     try {
       setSubmitting(true);
-      const res = await attendanceService.checkOut(gps?.latitude || null, gps?.longitude || null);
+      const currentGps = await getFreshGps();
+      if (!isWfh && office) {
+        if (!currentGps) return;
+        const distance = haversineMetres(currentGps.latitude, currentGps.longitude, Number(office.latitude), Number(office.longitude));
+        if (distance > office.radius_meters) {
+          toast.error('Cannot check-out: You are outside the allowed office perimeter.');
+          return;
+        }
+      }
+      const res = await attendanceService.checkOut(currentGps?.latitude || null, currentGps?.longitude || null);
       toast.success(`Checked out! Total hours: ${res.data.hours_worked || 0}h`);
       await loadData(true);
     } catch (err) {
@@ -585,7 +636,7 @@ export function AttendancePage() {
                     {!todayData?.record?.check_in ? (
                       <Button
                         onClick={handleCheckIn}
-                        disabled={submitting || (!isWfh && !!office && (locLoading || !!locError || !withinRadius))}
+                        disabled={submitting || (!isWfh && !!office && locLoading)}
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 flex items-center justify-center gap-1.5"
                       >
                         {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
@@ -594,7 +645,7 @@ export function AttendancePage() {
                     ) : !todayData?.record?.check_out ? (
                       <Button
                         onClick={handleCheckOut}
-                        disabled={submitting || (!isWfh && !!office && (locLoading || !!locError || !withinRadius))}
+                        disabled={submitting || (!isWfh && !!office && locLoading)}
                         className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold h-12 flex items-center justify-center gap-1.5"
                       >
                         {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

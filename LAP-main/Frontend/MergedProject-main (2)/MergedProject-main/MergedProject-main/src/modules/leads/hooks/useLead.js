@@ -1,16 +1,12 @@
 // src/modules/leads/hooks/useLead.js
+import { useGetLeadQuery } from '@/modules/leads/services/leadsApi';
+import { normalizeLead } from '@/modules/leads/hooks/useLeads';
+
 export const useLead = (id) => {
-  // Mock data since backend connection is removed
-  const mockLead = {
-    id: id || '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    status: 'Qualified',
-    priority: 'High',
-    company: 'Acme Corp',
-    phone: '555-0199',
-    description: 'This is a mock lead details description.',
-    createdAt: new Date().toISOString(),
+  const query = useGetLeadQuery(id, { skip: !id });
+
+  return {
+    ...query,
+    data: query.data ? normalizeLead(query.data) : undefined,
   };
-  return { data: mockLead, isError: false, isLoading: false };
 };

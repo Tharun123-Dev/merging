@@ -38,10 +38,13 @@ const TABS: Record<string, TabItem[]> = {
     { label: 'Attendance Shifts', path: '/hrms/shifts', permissions: ['ATTENDANCE_VIEW', 'ATTENDANCE_MANAGE', 'SETTINGS_MANAGE'] },
   ],
   'crm': [
-    { label: 'Leads Directory', path: '/leads', permissions: ['LEAD_VIEW', 'CRM_VIEW'] },
-    { label: 'Pipeline', path: '/leads/pipeline', permissions: ['LEAD_VIEW', 'CRM_VIEW'] },
-    { label: 'Followups', path: '/leads/followups', permissions: ['LEAD_VIEW', 'FOLLOWUP_VIEW', 'CRM_VIEW'] },
-    { label: 'Lead Stages', path: '/crm/stages', permissions: ['LEAD_MANAGE', 'CRM_MANAGE'] },
+    { label: 'All Leads', path: '/leads', permissions: ['LEAD_VIEW', 'CRM_VIEW'] },
+    { label: 'Student Form', path: '/leads/student-form', permissions: ['LEAD_CREATE', 'CRM_VIEW'] },
+    { label: 'Add Lead', path: '/leads/add-lead', permissions: ['LEAD_CREATE', 'CRM_VIEW'] },
+    { label: 'Follow Ups', path: '/leads/follow-ups', permissions: ['LEAD_VIEW', 'FOLLOWUP_VIEW', 'CRM_VIEW'] },
+    { label: 'Analytics', path: '/leads/dashboard', permissions: ['LEAD_VIEW', 'LEAD_ANALYTICS_VIEW', 'CRM_VIEW'] },
+    { label: 'Form Builder', path: '/leads/form-builder', permissions: ['LEAD_MANAGE', 'CRM_MANAGE', 'MANAGE_LEAD_FORMS'] },
+    { label: 'Statuses', path: '/leads/options', permissions: ['LEAD_MANAGE', 'CRM_MANAGE', 'MANAGE_LEAD_FORMS'] },
   ],
   'vendor': [
     { label: 'Vendor Dashboard', path: '/vendor/analytics' },
@@ -129,7 +132,7 @@ export function HrmsLayout() {
 
 export function CrmLayout() {
   return (
-    <div className="space-y-6">
+    <div className="crm-workspace space-y-6">
       <ModuleTabsHeader moduleName="crm" />
       <Outlet />
     </div>
