@@ -775,7 +775,7 @@ export function TicketsPage() {
                             disabled={Boolean(disablingTypeId)}
                             onClick={async () => {
                               try {
-                                setDisablingTypeId(type.id);
+                                setDisablingTypeId(String(type.id));
                                 await supportTicketsService.deleteType(type.id);
                                 toast.success('Issue type disabled successfully');
                                 await loadData(true);

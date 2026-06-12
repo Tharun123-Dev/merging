@@ -70,7 +70,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return navigationConfig
       .map((section) => {
-        // 1. Check permission gate on section. Java permissions are the source of truth.
+        // 1. Admin only check
+        if (section.adminOnly && !auth.user?.role?.includes('ADMIN') && auth.user?.role !== 'SUPERADMIN' && auth.user?.role !== 'SYSTEM_ADMIN') {
+          return null
+        }
+
+        // 2. Check permission gate on section.
         if (section.permissions?.length) {
           const hasSecPerm = section.permissions.some(
             (p) => hasPermission(p)
@@ -80,7 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return null
         }
 
-        // 2. Filter items within section
+        // 3. Filter items within section
         const filteredItems = section.items.filter((item) => {
           if (item.permissions?.length) {
             return item.permissions.some(
@@ -101,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       })
       .filter((section): section is NavSection => section !== null)
-  }, [auth.isAuthenticated, userPermissions, userModules, isModuleEnabled, hasPermission])
+  }, [auth.isAuthenticated, auth.user, userPermissions, userModules, isModuleEnabled, hasPermission])
 
   const enabledModules = useMemo(
     () => platformModules.filter((m) => m.enabled),

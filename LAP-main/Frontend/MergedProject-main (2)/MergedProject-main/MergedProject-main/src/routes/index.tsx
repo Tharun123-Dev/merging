@@ -196,15 +196,15 @@ export function AppRoutes() {
 
         {/* HRMS Module Routes (Wrapped in HrmsLayout) */}
         <Route element={<HrmsLayout />}>
-          <Route path="attendance" element={<ProtectedRoute element={<AttendancePage />} module="hrms" permission="ATTENDANCE_VIEW" />} />
-          <Route path="leave" element={<ProtectedRoute element={<LeavePage />} module="hrms" permission="LEAVE_VIEW" />} />
-          <Route path="payroll" element={<ProtectedRoute element={<PayrollPage />} module="hrms" permissions={["PAYROLL_VIEW", "SALARY_VIEW", "PAYSLIP_VIEW"]} />} />
-          <Route path="hrms/branches" element={<ProtectedRoute element={<BranchList />} module="hrms" permissions={["EMPLOYEE_VIEW", "DEPARTMENT_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/branches/create" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["EMPLOYEE_CREATE", "DEPARTMENT_CREATE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/branches/edit/:id" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["EMPLOYEE_UPDATE", "DEPARTMENT_UPDATE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts" element={<ProtectedRoute element={<ShiftList />} module="hrms" permissions={["ATTENDANCE_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts/create" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_CREATE", "ATTENDANCE_MANAGE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts/edit/:id" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_UPDATE", "ATTENDANCE_MANAGE", "SETTINGS_MANAGE"]} />} />
+          <Route path="attendance" element={<ProtectedRoute element={<AttendancePage />} module="hrms" permission="ATTENDANCE_VIEW_ATTENDANCE" />} />
+          <Route path="leave" element={<ProtectedRoute element={<LeavePage />} module="hrms" permission="LEAVE_VIEW_LEAVE" />} />
+          <Route path="payroll" element={<ProtectedRoute element={<PayrollPage />} module="hrms" permissions={["PAYROLL_VIEW_PAYROLL", "PAYROLL_VIEW_SALARY", "PAYROLL_VIEW_PAYSLIP"]} />} />
+          <Route path="hrms/branches" element={<ProtectedRoute element={<BranchList />} module="hrms" permissions={["USER_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/branches/create" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["USER_CREATE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/branches/edit/:id" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["USER_UPDATE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts" element={<ProtectedRoute element={<ShiftList />} module="hrms" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts/create" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts/edit/:id" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
         </Route>
 
         {/* CRM Module Routes (Wrapped in CrmLayout) */}

@@ -242,7 +242,7 @@ export default function Vendors() {
     }
   };
 
-  const handleDeleteCategory = async (id: number) => {
+  const handleDeleteCategory = async (id: number | string) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
         await rolesApi.delete(`/api/vendor-categories/${id}`);
