@@ -573,8 +573,6 @@ class AllLeaveRequestsView(APIView):
             'employee', 'employee__profile', 'leave_type', 'approved_by'
         ).filter(tenant_id=get_tenant_id(request))
 
-        qs = qs.exclude(employee=request.user)
-
         if status_filter:
             qs = qs.filter(status=status_filter)
         if emp_id:
@@ -647,8 +645,7 @@ class LeaveActionView(APIView):
             from attendance.settings_helper import is_weekend as _is_wknd
 
             is_unpaid  = (not leave.leave_type.is_paid) or (leave.leave_type.code == 'LOP')
-            is_half    = leave.session in ('first_half', 'second_half')
-            att_status = 'half_day' if is_half else ('absent' if is_unpaid else 'leave')
+            att_status = 'absent' if is_unpaid else 'leave'
 
             cur = leave.start_date
             while cur <= leave.end_date:

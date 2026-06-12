@@ -74,6 +74,20 @@ def count_working_days_between(start_date, end_date):
     return total
 
 
+def get_period_factor(year, month, period_start, period_end):
+    """Scale salary only for split payroll periods, using one working-day basis."""
+    month_start = date(year, month, 1)
+    month_end = date(year, month, calendar.monthrange(year, month)[1])
+    full_month_working_days = count_working_days_between(month_start, month_end)
+    period_working_days = count_working_days_between(period_start, period_end)
+    if full_month_working_days <= 0:
+        return Decimal('0'), period_working_days
+    return (
+        Decimal(str(period_working_days)) / Decimal(str(full_month_working_days)),
+        period_working_days,
+    )
+
+
 def get_approved_leave_dates(employee, year, month, period_start=None, period_end=None):
     start_of_month, end_of_month = get_run_period(year, month, period_start, period_end)
 
@@ -143,13 +157,9 @@ def calculate_ot_pay(basic: Decimal, working_days: int, ot_hours: Decimal) -> De
 
 
 def calculate_employee_payroll_values(emp, structure, year, month, period_start=None, period_end=None):
-    full_working_days, days_in_month = get_working_days_in_month(year, month)
+    _, days_in_month = get_working_days_in_month(year, month)
     period_start, period_end = get_run_period(year, month, period_start, period_end)
-    working_days = count_working_days_between(period_start, period_end)
-    period_factor = (
-        Decimal(str(working_days)) / Decimal(str(full_working_days))
-        if full_working_days > 0 else Decimal('0')
-    )
+    period_factor, working_days = get_period_factor(year, month, period_start, period_end)
     att = get_attendance_summary(emp, year, month, period_start, period_end)
     present = att['present']
     lop_days = att['lop_days']
@@ -186,7 +196,7 @@ def calculate_employee_payroll_values(emp, structure, year, month, period_start=
     extra_work_pay = ROUND2((base_gross / Decimal(str(working_days))) * extra_work_days) if working_days > 0 else Decimal('0')
     gross = base_gross + ot_pay + extra_work_pay
 
-    structure_gross = gross - ot_pay
+    structure_gross = base_gross
     if working_days > 0 and total_lop > 0:
         per_day_rate = ROUND2(structure_gross / Decimal(str(working_days)))
         lop_deduction = ROUND2(per_day_rate * total_lop)
@@ -510,8 +520,6 @@ def get_attendance_summary(employee, year, month, period_start=None, period_end=
                 status = str(rec.status).lower()
 
                 if rec.check_in and not rec.check_out:
-                    day_present = max(day_present, Decimal('0.5'))
-                    day_lop = max(day_lop, Decimal('0.5'))
                     continue
 
                 if status == 'present':
@@ -528,7 +536,10 @@ def get_attendance_summary(employee, year, month, period_start=None, period_end=
                         day_present = max(day_present, Decimal('0.5'))
                         day_lop = max(day_lop, Decimal('0.5'))
 
-                elif status in ['absent', 'auto_absent', 'lop', 'pending']:
+                elif status == 'pending':
+                    continue
+
+                elif status in ['absent', 'auto_absent', 'lop']:
                     if d in paid_full_dates or d in paid_half_dates:
                         day_present = max(day_present, Decimal('1'))
                     elif auto_absent_enabled and day_present == 0:
@@ -543,7 +554,12 @@ def get_attendance_summary(employee, year, month, period_start=None, period_end=
                 elif status == 'holiday':
                     day_present = max(day_present, Decimal('1'))
 
-                if rec.ot_hours:
+                if (
+                    rec.check_in
+                    and rec.check_out
+                    and status in ('present', 'late', 'half_day', 'holiday')
+                    and rec.ot_hours
+                ):
                     ot_hrs += Decimal(str(rec.ot_hours))
 
             present += day_present
@@ -623,15 +639,11 @@ def process_payroll_run(payroll_run: PayrollRun, employee_ids=None):
     """
     month = payroll_run.month
     year  = payroll_run.year
-    full_working_days, days_in_month = get_working_days_in_month(year, month)
+    _, days_in_month = get_working_days_in_month(year, month)
     period_start, period_end = get_run_period(
         year, month, payroll_run.period_start, payroll_run.period_end
     )
-    working_days = count_working_days_between(period_start, period_end)
-    period_factor = (
-        Decimal(str(working_days)) / Decimal(str(full_working_days))
-        if full_working_days > 0 else Decimal('0')
-    )
+    period_factor, working_days = get_period_factor(year, month, period_start, period_end)
     as_of = period_end
 
     # ── Read ALL live rates from System Settings ──────────────────────
@@ -700,7 +712,7 @@ def process_payroll_run(payroll_run: PayrollRun, employee_ids=None):
         gross  = base_gross + ot_pay + extra_work_pay
 
         # ── Step 3: LOP deduction ─────────────────────────────────────
-        structure_gross = gross - ot_pay  # exclude OT from LOP base
+        structure_gross = base_gross  # exclude OT and extra-work pay from LOP base
         if working_days > 0 and total_lop > 0:
             per_day_rate  = ROUND2(structure_gross / Decimal(str(working_days)))
             lop_deduction = ROUND2(per_day_rate * total_lop)

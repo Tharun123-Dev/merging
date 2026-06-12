@@ -36,11 +36,14 @@ def user_has_any(request, codes):
 def make_report_permission(*feature_codes):
     class ReportPermission(make_any_permission('view_reports', 'self_reports')):
         def has_permission(self, request, view):
-            if not super().has_permission(request, view):
+            if not request.user or not request.user.is_authenticated:
                 return False
             if has_all_reports(request):
                 return True
-            return request.user.has_perm_code('self_reports')
+            return (
+                request.user.has_perm_code('self_reports')
+                or user_has_any(request, feature_codes)
+            )
 
     ReportPermission.__name__ = 'ReportPermission_' + '_'.join(feature_codes)
     return ReportPermission
@@ -423,7 +426,17 @@ class OvertimeReportView(APIView):
 
 
 class ReportsDashboardView(APIView):
-    permission_classes = [make_any_permission('view_reports', 'self_reports')]
+    permission_classes = [make_report_permission(
+        'view_attendance',
+        'view_team_attendance',
+        'view_leave',
+        'apply_leave',
+        'view_all_leave',
+        'approve_leave',
+        'view_payslip',
+        'view_payroll',
+        'process_payroll',
+    )]
 
     def get(self, request):
         from attendance.models import AttendanceRecord

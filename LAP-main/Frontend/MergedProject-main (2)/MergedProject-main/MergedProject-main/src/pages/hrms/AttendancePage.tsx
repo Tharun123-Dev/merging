@@ -18,6 +18,7 @@ const STATUS_COLOR: Record<string, { bg: string; color: string; label: string; t
   half_day: { bg: 'bg-amber-500/10 border-amber-500/30 text-amber-500', color: 'text-amber-500', label: 'H', title: 'Half Day' },
   absent: { bg: 'bg-red-500/10 border-red-500/30 text-red-500', color: 'text-red-500', label: 'A', title: 'Absent / LOP' },
   pending: { bg: 'bg-orange-500/10 border-orange-500/30 text-orange-500', color: 'text-orange-500', label: 'PEN', title: 'Pending Correction' },
+  missing: { bg: 'bg-slate-500/10 border-slate-500/30 text-slate-500', color: 'text-slate-500', label: 'M', title: 'Missing Punch' },
   leave: { bg: 'bg-purple-500/10 border-purple-500/30 text-purple-500', color: 'text-purple-500', label: 'LV', title: 'On Leave' },
   lop_leave: { bg: 'bg-rose-500/10 border-rose-500/30 text-rose-500', color: 'text-rose-500', label: 'LOP', title: 'LOP Leave' },
   holiday: { bg: 'bg-blue-500/10 border-blue-500/30 text-blue-500', color: 'text-blue-500', label: 'PH', title: 'Public Holiday' },
@@ -461,6 +462,10 @@ export function AttendancePage() {
     }
   };
 
+  useEffect(() => {
+    loadData();
+  }, [month, year, approvalsFilter]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -841,8 +846,11 @@ export function AttendancePage() {
                   </div>
                 </div>
                 {attendancePolicy && (
-                  <div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-[10px] text-muted-foreground sm:grid-cols-4">
+                  <div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-[10px] text-muted-foreground sm:grid-cols-5">
                     <span>Shift: <b className="text-foreground">{attendancePolicy.shift_start} - {attendancePolicy.shift_end}</b></span>
+                    {attendancePolicy.night_shift_enabled && (
+                      <span>Night: <b className="text-foreground">{attendancePolicy.night_shift_start} - {attendancePolicy.night_shift_end}</b></span>
+                    )}
                     <span>Grace: <b className="text-foreground">{attendancePolicy.grace_minutes} min</b></span>
                     <span>Half day below: <b className="text-foreground">{attendancePolicy.half_day_hours}h</b></span>
                     <span>Weekends: <b className="text-foreground">{attendancePolicy.weekend_days?.join(', ') || 'none'}</b></span>
@@ -878,8 +886,11 @@ export function AttendancePage() {
                       const cellToday = dateString === new Date().toISOString().split('T')[0];
 
                       let statusKey = record?.status;
-                      if (record && !record.check_out && dateString !== new Date().toISOString().split('T')[0]) {
-                        statusKey = 'half_day';
+                      if (record && !record.check_out && !['leave', 'lop_leave', 'holiday'].includes(record.status) && dateString !== new Date().toISOString().split('T')[0]) {
+                        statusKey = 'missing';
+                      }
+                      if (record?.pending_reason === 'missing_attendance' || record?.pending_reason === 'missing_checkout') {
+                        statusKey = 'missing';
                       }
 
                       let displayColor = STATUS_COLOR.weekend;
@@ -889,7 +900,7 @@ export function AttendancePage() {
                         displayColor = STATUS_COLOR.holiday;
                       }
 
-                      const hasOT = record && record.ot_hours > 0;
+                      const hasOT = record && record.check_in && record.check_out && record.ot_hours > 0;
                       const checkInFormatted = record?.check_in ? formatTime(record.check_in) : null;
                       const checkOutFormatted = record?.check_out ? formatTime(record.check_out) : null;
 
@@ -939,7 +950,7 @@ export function AttendancePage() {
                                 OT +{record?.ot_hours}h
                               </p>
                             )}
-                            {record?.status === 'late' && (
+                            {statusKey === 'late' && (
                               <p className="text-[8px] text-yellow-500 font-semibold">Late entry</p>
                             )}
                             {holidayName && (

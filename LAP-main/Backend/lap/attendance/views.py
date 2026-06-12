@@ -53,39 +53,52 @@ def _now_time_local() -> time:
     return _now_local().time().replace(tzinfo=None)
 
 
+def _record_tenant_id(record):
+    return (
+        getattr(record, 'tenant_id', None)
+        or getattr(getattr(record, 'employee', None), 'tenant_id', None)
+        or 'default'
+    )
+
+
 def _snapshot_shift_policy(record, check_in_time=None):
-    active_shift = get_active_shift_for_time(check_in_time or record.check_in or _now_time_local())
+    tenant_id = _record_tenant_id(record)
+    active_shift = get_active_shift_for_time(check_in_time or record.check_in or _now_time_local(), tenant_id)
     record.shift_type = active_shift['type']
     record.shift_start_snapshot = active_shift['start']
     record.shift_end_snapshot = active_shift['end']
-    record.grace_minutes_snapshot = get_grace_minutes()
-    record.standard_hours_snapshot = Decimal(str(get_standard_hours()))
-    record.half_day_hours_snapshot = Decimal(str(get_half_day_hours()))
+    record.grace_minutes_snapshot = get_grace_minutes(tenant_id)
+    record.standard_hours_snapshot = Decimal(str(get_standard_hours(tenant_id)))
+    record.half_day_hours_snapshot = Decimal(str(get_half_day_hours(tenant_id)))
     record.is_overnight_shift = active_shift['is_overnight']
 
 
 def _snapshot_shift_policy_for_type(record, shift_type=None):
+    tenant_id = _record_tenant_id(record)
     shift_type = shift_type or getattr(record, 'shift_type', 'day') or 'day'
-    if shift_type == 'night' and get_night_shift_enabled():
-        shift_start = get_night_shift_start()
-        shift_end = get_night_shift_end()
+    if shift_type == 'night' and get_night_shift_enabled(tenant_id):
+        shift_start = get_night_shift_start(tenant_id)
+        shift_end = get_night_shift_end(tenant_id)
         record.shift_type = 'night'
     else:
-        shift_start = get_shift_start()
-        shift_end = get_shift_end()
+        shift_start = get_shift_start(tenant_id)
+        shift_end = get_shift_end(tenant_id)
         record.shift_type = 'day'
     record.shift_start_snapshot = shift_start
     record.shift_end_snapshot = shift_end
-    record.grace_minutes_snapshot = get_grace_minutes()
-    record.standard_hours_snapshot = Decimal(str(get_standard_hours()))
-    record.half_day_hours_snapshot = Decimal(str(get_half_day_hours()))
+    record.grace_minutes_snapshot = get_grace_minutes(tenant_id)
+    record.standard_hours_snapshot = Decimal(str(get_standard_hours(tenant_id)))
+    record.half_day_hours_snapshot = Decimal(str(get_half_day_hours(tenant_id)))
     record.is_overnight_shift = shift_end <= shift_start
 
 
 def _refresh_record_from_current_policy(record):
     if not record or record.is_locked:
         return record
-    _snapshot_shift_policy_for_type(record, record.shift_type)
+    if record.check_in:
+        _snapshot_shift_policy(record, record.check_in)
+    else:
+        _snapshot_shift_policy_for_type(record, record.shift_type)
     if record.check_in and not record.check_in_at:
         record.check_in_at, record.check_out_at = _infer_attendance_datetimes(record)
     elif record.check_in and record.check_out and not record.check_out_at:
@@ -123,8 +136,9 @@ def _combine_local(day, clock):
 
 
 def _shift_window_for_record(record):
-    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start()
-    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end()
+    tenant_id = _record_tenant_id(record)
+    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start(tenant_id)
+    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end(tenant_id)
     is_overnight = bool(
         getattr(record, 'is_overnight_shift', False)
         or shift_end <= shift_start
@@ -144,8 +158,9 @@ def _shift_window_for_record(record):
 def _infer_attendance_datetimes(record):
     if not record.check_in:
         return None, None
-    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start()
-    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end()
+    tenant_id = _record_tenant_id(record)
+    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start(tenant_id)
+    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end(tenant_id)
     is_overnight = bool(
         getattr(record, 'is_overnight_shift', False)
         or shift_end <= shift_start
@@ -180,11 +195,12 @@ def _get_status(check_in, check_out, hours_worked, record=None):
     if not check_in:
         return 'absent'
     if not check_out:
-        return 'half_day'
+        return 'pending'
 
-    shift_start    = getattr(record, 'shift_start_snapshot', None) or get_shift_start()
-    grace_minutes  = getattr(record, 'grace_minutes_snapshot', None) or get_grace_minutes()
-    half_day_hours = getattr(record, 'half_day_hours_snapshot', None) or Decimal(str(get_half_day_hours()))
+    tenant_id = _record_tenant_id(record) if record else None
+    shift_start    = getattr(record, 'shift_start_snapshot', None) or get_shift_start(tenant_id)
+    grace_minutes  = getattr(record, 'grace_minutes_snapshot', None) or get_grace_minutes(tenant_id)
+    half_day_hours = getattr(record, 'half_day_hours_snapshot', None) or Decimal(str(get_half_day_hours(tenant_id)))
 
     if record and record.check_in_at:
         shift_start_at, _ = _shift_window_for_record(record)
@@ -206,9 +222,10 @@ def _calculate_ot_hours(check_in, check_out, record=None):
     if not check_in or not check_out:
         return Decimal('0')
 
-    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end()
-    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start()
-    grace_minutes = getattr(record, 'grace_minutes_snapshot', None) or get_grace_minutes()
+    tenant_id = _record_tenant_id(record) if record else None
+    shift_end = getattr(record, 'shift_end_snapshot', None) or get_shift_end(tenant_id)
+    shift_start = getattr(record, 'shift_start_snapshot', None) or get_shift_start(tenant_id)
+    grace_minutes = getattr(record, 'grace_minutes_snapshot', None) or get_grace_minutes(tenant_id)
     if record and record.check_in_at and record.check_out_at:
         ci = record.check_in_at
         co = record.check_out_at
@@ -378,7 +395,7 @@ class CheckInView(APIView):
         is_wfh   = work_mode == 'work_from_home'
         now_dt   = _now_local()
         now_time = now_dt.time().replace(tzinfo=None)
-        active_shift = get_active_shift_for_time(now_time)
+        active_shift = get_active_shift_for_time(now_time, get_tenant_id(request))
         attendance_date = _attendance_date_for_shift(request.user, now_dt, active_shift)
         shift_type = active_shift['type']
 
@@ -396,25 +413,20 @@ class CheckInView(APIView):
             lon = request.data.get('longitude')
             distance_m = None
 
-        open_record = AttendanceRecord.objects.filter(
-            employee=request.user,
-            check_in__isnull=False,
-            check_out__isnull=True,
-        ).order_by('-check_in_at', '-created_at').first()
-        if open_record:
-            return Response({'error': 'Please check out from your open shift before checking in again'}, status=status.HTTP_400_BAD_REQUEST)
-
         existing = AttendanceRecord.objects.filter(
             employee=request.user,
             date=attendance_date,
             shift_type=shift_type,
         ).first()
-        if existing and existing.check_in:
-            return Response({'error': f'Already checked in for {shift_type} shift'}, status=status.HTTP_400_BAD_REQUEST)
 
         if existing:
             existing.check_in = now_time
             existing.check_in_at = now_dt
+            existing.check_out = None
+            existing.check_out_at = None
+            existing.hours_worked = Decimal('0')
+            existing.ot_hours = Decimal('0')
+            existing.status = 'present'
             existing.is_wfh   = is_wfh
             _snapshot_shift_policy(existing, now_time)
             if lat is not None:
@@ -497,14 +509,17 @@ class TodayAttendanceView(APIView):
 
     def get(self, request):
         today   = _today_local()
-        record = AttendanceRecord.objects.filter(
+        open_record = AttendanceRecord.objects.filter(
             employee=request.user,
             check_in__isnull=False,
             check_out__isnull=True,
-        ).order_by('-check_in_at', '-created_at').first()
-        if not record:
-            record  = AttendanceRecord.objects.filter(employee=request.user, date=today).order_by('-shift_type').first()
-        holiday = Holiday.objects.filter(date=today).first()
+            date__lte=today,
+        ).order_by('-date', '-created_at').first()
+        record = open_record or AttendanceRecord.objects.filter(
+            employee=request.user,
+            date=today,
+        ).order_by('-shift_type', '-created_at').first()
+        holiday = Holiday.objects.filter(tenant_id=get_tenant_id(request), date=today).first()
         return Response({
             'record':  AttendanceRecordSerializer(record).data if record else None,
             'is_wfh':  record.is_wfh if record else False,
@@ -676,7 +691,7 @@ class MyAttendanceView(APIView):
             elif date_str not in holiday_date_set:
                 for rec in serialized:
                     if rec.get('date') == date_str:
-                        if rec.get('status') in ('absent', 'leave', 'lop_leave'):
+                        if rec.get('status') in ('absent', 'half_day', 'pending', 'leave', 'lop_leave'):
                             rec['status'] = leave_status
                         rec['leave_name'] = leave_info['name']
                         rec['is_lop']     = leave_info['is_lop']
@@ -690,7 +705,11 @@ class MyAttendanceView(APIView):
 
         for day_records in grouped_serialized.values():
             statuses = [r.get('status', 'absent') for r in day_records]
-            if 'late' in statuses:
+            if 'leave' in statuses:
+                st = 'leave'
+            elif 'lop_leave' in statuses:
+                st = 'lop_leave'
+            elif 'late' in statuses:
                 st = 'late'
             elif 'present' in statuses:
                 st = 'present'
@@ -698,10 +717,6 @@ class MyAttendanceView(APIView):
                 st = 'half_day'
             elif 'holiday' in statuses:
                 st = 'holiday'
-            elif 'leave' in statuses:
-                st = 'leave'
-            elif 'lop_leave' in statuses:
-                st = 'lop_leave'
             elif 'pending' in statuses:
                 st = 'pending'
             else:
@@ -710,7 +725,7 @@ class MyAttendanceView(APIView):
 
         summary = {
             # present + late + holiday all count as "present" for display
-            'present':   status_counts.get('present', 0) + status_counts.get('late', 0) + status_counts.get('holiday', 0),
+            'present':   status_counts.get('present', 0) + status_counts.get('late', 0) + status_counts.get('holiday', 0) + status_counts.get('leave', 0),
             'absent':    status_counts.get('absent', 0),
             'pending':   status_counts.get('pending', 0),
             'late':      status_counts.get('late', 0),
@@ -722,8 +737,9 @@ class MyAttendanceView(APIView):
             'total_ot':    float(sum(r.ot_hours     for r in records if r.ot_hours)),
         }
 
-        shift_start   = get_shift_start()
-        grace_minutes = get_grace_minutes()
+        tenant_id = get_tenant_id(request)
+        shift_start   = get_shift_start(tenant_id)
+        grace_minutes = get_grace_minutes(tenant_id)
         late_cutoff   = (
             datetime.combine(today, shift_start) + timedelta(minutes=grace_minutes)
         ).strftime('%H:%M')
@@ -736,15 +752,15 @@ class MyAttendanceView(APIView):
             'holidays': holidays,
             'policy': {
                 'shift_start':   shift_start.strftime('%H:%M'),
-                'shift_end':     get_shift_end().strftime('%H:%M'),
+                'shift_end':     get_shift_end(tenant_id).strftime('%H:%M'),
                 'grace_minutes': grace_minutes,
                 'late_cutoff':   late_cutoff,
-                'standard_hours': get_standard_hours(),
-                'half_day_hours': get_half_day_hours(),
+                'standard_hours': get_standard_hours(tenant_id),
+                'half_day_hours': get_half_day_hours(tenant_id),
                 'weekend_days': get_weekend_days(),
-                'night_shift_enabled': get_night_shift_enabled(),
-                'night_shift_start':   get_night_shift_start().strftime('%H:%M'),
-                'night_shift_end':     get_night_shift_end().strftime('%H:%M'),
+                'night_shift_enabled': get_night_shift_enabled(tenant_id),
+                'night_shift_start':   get_night_shift_start(tenant_id).strftime('%H:%M'),
+                'night_shift_end':     get_night_shift_end(tenant_id).strftime('%H:%M'),
             },
         })
 

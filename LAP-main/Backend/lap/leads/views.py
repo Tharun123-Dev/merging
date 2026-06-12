@@ -113,6 +113,10 @@ def _normalize_external_user(payload, tenant_id):
     last_name = _first_present(payload, 'lastName', 'last_name') or ''
     if not full_name:
         full_name = f'{first_name} {last_name}'.strip() or email
+    elif not first_name and not last_name:
+        name_parts = str(full_name).strip().split(None, 1)
+        first_name = name_parts[0] if name_parts else ''
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
 
     return {
         'external_id': str(external_id or email),
@@ -628,22 +632,23 @@ class LeadUsersListView(APIView):
         if not _has_any_perm(request.user, 'view_leads', 'create_lead', 'assign_lead', 'create_followup'):
             return _denied()
         tenant_id = getattr(request.user, 'tenant_id', None) or _tenant_id(request.user)
-        java_token = getattr(request.user, '_java_token', None)
+        auth_token = request.auth
+        java_token = getattr(request.user, '_java_token', None) or (str(auth_token) if auth_token else '')
         external_users = list_users(java_token) if java_token else []
-        counselors = []
+        assignable_users = []
         seen_emails = set()
+        normalized_tenant_id = str(tenant_id).strip().lower() if tenant_id else ''
 
         for payload in external_users:
             user_data = _normalize_external_user(payload, tenant_id)
             if not user_data or not user_data['is_active']:
                 continue
-            if tenant_id and user_data['tenant_id'] != str(tenant_id):
-                continue
-            if not _is_counselor_payload(user_data):
+            user_tenant = str(user_data['tenant_id']).strip().lower()
+            if normalized_tenant_id and user_tenant != normalized_tenant_id:
                 continue
             user = _sync_external_user(user_data)
             seen_emails.add(user.email.lower())
-            counselors.append({
+            assignable_users.append({
                 'id': user.id,
                 'external_id': user_data['external_id'],
                 'full_name': user_data['full_name'],
@@ -652,24 +657,10 @@ class LeadUsersListView(APIView):
                 'source': 'java',
             })
 
-        if counselors:
-            return Response(counselors)
-
         users = User.objects.filter(is_active=True)
         if tenant_id:
             users = users.filter(tenant_id=tenant_id)
-        users = [
-            user for user in users
-            if (
-                user.email.lower() not in seen_emails
-                and (
-                    user.role == 'counselor'
-                    or user.has_perm_code('create_followup')
-                    or user.has_perm_code('edit_lead')
-                )
-            )
-        ]
-        return Response([
+        assignable_users.extend([
             {
                 'id': user.id,
                 'external_id': None,
@@ -679,7 +670,9 @@ class LeadUsersListView(APIView):
                 'source': 'local-fallback',
             }
             for user in users
+            if user.email.lower() not in seen_emails
         ])
+        return Response(assignable_users)
 
 
 class RevenueOverviewView(APIView):

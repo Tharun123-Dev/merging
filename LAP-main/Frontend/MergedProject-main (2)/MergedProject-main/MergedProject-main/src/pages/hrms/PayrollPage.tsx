@@ -444,6 +444,17 @@ export function PayrollPage() {
 
   const activeEmployeesList = activeRunDetail?.available_employees || [];
   const unprocessedEmployees = activeEmployeesList.filter((e) => !e.processed && e.has_salary);
+  const canRunBatch = activeRunDetail?.run.status !== 'locked' && (
+    processEmployeeId !== 'all' ||
+    unprocessedEmployees.length > 0 ||
+    (activeRunDetail?.entries?.length || 0) > 0
+  );
+  const batchActionLabel =
+    processEmployeeId === 'all' && unprocessedEmployees.length === 0 && (activeRunDetail?.entries?.length || 0) > 0
+      ? 'Reprocess Batch'
+      : processEmployeeId === 'all'
+        ? 'Process Batch'
+        : 'Process User';
 
   return (
     <div className="space-y-6">
@@ -847,10 +858,10 @@ export function PayrollPage() {
                                 <Button
                                   variant="secondary"
                                   onClick={handleProcessRun}
-                                  disabled={submitting || unprocessedEmployees.length === 0}
+                                  disabled={submitting || !canRunBatch}
                                 >
                                   {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-                                  {processEmployeeId === 'all' ? 'Process Batch' : 'Process User'}
+                                  {batchActionLabel}
                                 </Button>
                               </>
                             )}

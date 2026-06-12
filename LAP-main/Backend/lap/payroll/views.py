@@ -548,6 +548,11 @@ class ProcessPayrollRunView(APIView):
             employee_ids = [employee_id] if employee_id else None
             if employee_id and PayrollEntry.objects.filter(payroll_run=run, employee_id=employee_id, tenant_id=get_tenant_id(request)).exists():
                 return Response({'error': 'Payroll already processed for this employee in this period'}, status=400)
+            if not employee_id:
+                PayrollEntry.objects.filter(
+                    payroll_run=run,
+                    tenant_id=get_tenant_id(request),
+                ).delete()
 
             created, skipped = process_payroll_run(run, employee_ids=employee_ids)
             if not created and employee_id and not skipped:

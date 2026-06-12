@@ -8,10 +8,16 @@ from datetime import time
 from decimal import Decimal
 
 
-def _get(key, default):
+def _get(key, default, tenant_id=None):
     try:
         from notifications.models import SystemSetting
-        s = SystemSetting.objects.filter(key=key).first()
+        if tenant_id:
+            s = (
+                SystemSetting.objects.filter(tenant_id=str(tenant_id), key=key).first()
+                or SystemSetting.objects.filter(tenant_id='default', key=key).first()
+            )
+        else:
+            s = SystemSetting.objects.filter(key=key).first()
         if s:
             return s.get_value()
     except Exception:
@@ -40,24 +46,24 @@ def _parse_time_setting(raw, fallback: time) -> time:
         return fallback
 
 
-def get_shift_start() -> time:
-    return _parse_time_setting(_get('work_start_time', '09:00'), time(9, 0))
+def get_shift_start(tenant_id=None) -> time:
+    return _parse_time_setting(_get('work_start_time', '09:00', tenant_id), time(9, 0))
 
 
-def get_shift_end() -> time:
-    return _parse_time_setting(_get('work_end_time', '18:00'), time(18, 0))
+def get_shift_end(tenant_id=None) -> time:
+    return _parse_time_setting(_get('work_end_time', '18:00', tenant_id), time(18, 0))
 
 
-def get_night_shift_enabled() -> bool:
-    return _parse_bool(_get('night_shift_enabled', False))
+def get_night_shift_enabled(tenant_id=None) -> bool:
+    return _parse_bool(_get('night_shift_enabled', False, tenant_id))
 
 
-def get_night_shift_start() -> time:
-    return _parse_time_setting(_get('night_shift_start_time', '22:00'), time(22, 0))
+def get_night_shift_start(tenant_id=None) -> time:
+    return _parse_time_setting(_get('night_shift_start_time', '22:00', tenant_id), time(22, 0))
 
 
-def get_night_shift_end() -> time:
-    return _parse_time_setting(_get('night_shift_end_time', '06:00'), time(6, 0))
+def get_night_shift_end(tenant_id=None) -> time:
+    return _parse_time_setting(_get('night_shift_end_time', '06:00', tenant_id), time(6, 0))
 
 
 def is_time_in_shift(clock: time, start: time, end: time) -> bool:
@@ -66,18 +72,18 @@ def is_time_in_shift(clock: time, start: time, end: time) -> bool:
     return clock >= start or clock < end
 
 
-def get_active_shift_for_time(clock: time) -> dict:
-    night_start = get_night_shift_start()
-    night_end = get_night_shift_end()
-    if get_night_shift_enabled() and is_time_in_shift(clock, night_start, night_end):
+def get_active_shift_for_time(clock: time, tenant_id=None) -> dict:
+    night_start = get_night_shift_start(tenant_id)
+    night_end = get_night_shift_end(tenant_id)
+    if get_night_shift_enabled(tenant_id) and is_time_in_shift(clock, night_start, night_end):
         return {
             'type': 'night',
             'start': night_start,
             'end': night_end,
             'is_overnight': night_end <= night_start,
         }
-    day_start = get_shift_start()
-    day_end = get_shift_end()
+    day_start = get_shift_start(tenant_id)
+    day_end = get_shift_end(tenant_id)
     return {
         'type': 'day',
         'start': day_start,
@@ -86,16 +92,16 @@ def get_active_shift_for_time(clock: time) -> dict:
     }
 
 
-def get_grace_minutes() -> int:
-    return int(_get('grace_period_minutes', 15))
+def get_grace_minutes(tenant_id=None) -> int:
+    return int(_get('grace_period_minutes', 15, tenant_id))
 
 
-def get_standard_hours() -> float:
-    return float(_get('work_hours_per_day', 8))
+def get_standard_hours(tenant_id=None) -> float:
+    return float(_get('work_hours_per_day', 8, tenant_id))
 
 
-def get_half_day_hours() -> float:
-    return float(_get('half_day_hours', 4))
+def get_half_day_hours(tenant_id=None) -> float:
+    return float(_get('half_day_hours', 4, tenant_id))
 
 
 def get_late_per_half_day() -> int:

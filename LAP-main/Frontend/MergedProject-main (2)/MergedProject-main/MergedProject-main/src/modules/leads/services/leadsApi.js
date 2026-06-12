@@ -1,10 +1,15 @@
 // src/modules/leads/services/leadsApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+const lapApiBase = import.meta.env.VITE_LAP_API_BASE || import.meta.env.VITE_API_BASE || '/api';
+const baseUrl = lapApiBase.replace(/\/+$/, '').endsWith('/api')
+  ? lapApiBase.replace(/\/+$/, '')
+  : `${lapApiBase.replace(/\/+$/, '')}/api`;
+
 export const leadsApi = createApi({
   reducerPath: 'leadsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_LAP_API_BASE || import.meta.env.VITE_API_BASE || '/api'}/api`,
+    baseUrl,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

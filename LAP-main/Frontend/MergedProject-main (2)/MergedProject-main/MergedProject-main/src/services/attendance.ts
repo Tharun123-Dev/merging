@@ -26,6 +26,7 @@ export interface AttendanceRecord {
   checkout_latitude?: number | null;
   checkout_longitude?: number | null;
   holiday_name?: string | null;
+  pending_reason?: string | null;
 }
 
 export interface AttendancePolicy {
