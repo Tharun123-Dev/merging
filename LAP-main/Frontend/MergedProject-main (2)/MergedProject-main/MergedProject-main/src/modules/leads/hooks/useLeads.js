@@ -1,10 +1,34 @@
 // src/modules/leads/hooks/useLeads.js
-export const useLeads = () => {
-  // Mock data since backend connection is removed
-  const mockLeads = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', status: 'Qualified', priority: 'High', company: 'Acme Corp' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', status: 'New', priority: 'Medium', company: 'Globex' },
-  ];
-  return { data: mockLeads, isError: false, isLoading: false };
+import { useGetLeadsQuery } from '@/modules/leads/services/leadsApi';
+
+const getDynamicValue = (lead, acceptedLabels) => {
+  const labels = acceptedLabels.map((label) => label.toLowerCase());
+  return lead.field_values?.find((item) =>
+    labels.includes(String(item.field?.label || '').trim().toLowerCase())
+  )?.value;
 };
 
+const normalizeLead = (lead) => ({
+  ...lead,
+  name: lead.full_name || lead.name || '',
+  company: lead.company || getDynamicValue(lead, ['company', 'company name', 'organization']) || '',
+  priority: lead.priority || getDynamicValue(lead, ['priority', 'lead priority']) || 'Medium',
+  assigned_to: lead.assigned_to || (
+    lead.counselor
+      ? {
+          id: lead.counselor.id,
+          name: lead.counselor.full_name || lead.counselor.email,
+        }
+      : null
+  ),
+  followup_date: lead.followup_date || getDynamicValue(lead, ['follow-up date', 'followup date', 'next follow up']) || null,
+});
+
+export const useLeads = () => {
+  const query = useGetLeadsQuery();
+
+  return {
+    ...query,
+    data: Array.isArray(query.data) ? query.data.map(normalizeLead) : [],
+  };
+};

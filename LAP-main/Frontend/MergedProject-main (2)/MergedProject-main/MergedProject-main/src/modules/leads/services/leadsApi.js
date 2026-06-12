@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const leadsApi = createApi({
   reducerPath: 'leadsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${import.meta.env.VITE_LAP_API_BASE || import.meta.env.VITE_API_BASE || '/api'}/api`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {
@@ -20,7 +20,7 @@ export const leadsApi = createApi({
   tagTypes: ['Leads', 'FollowUps'],
   endpoints: (builder) => ({
     getLeads: builder.query({
-      query: () => 'leads',
+      query: () => 'leads/',
       providesTags: (result) =>
         result ? [...result.map(({ id }) => ({ type: 'Leads', id })), 'Leads'] : ['Leads'],
     }),
@@ -29,7 +29,7 @@ export const leadsApi = createApi({
     }),
     createLead: builder.mutation({
       query: (payload) => ({
-        url: 'leads',
+        url: 'leads/',
         method: 'POST',
         body: payload,
       }),
@@ -37,14 +37,14 @@ export const leadsApi = createApi({
     }),
     updateLead: builder.mutation({
       query: ({ id, ...patch }) => ({
-        url: `leads/${id}`,
+        url: `leads/${id}/`,
         method: 'PUT',
         body: patch,
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Leads', id }],
     }),
     deleteLead: builder.mutation({
-      query: (id) => ({ url: `leads/${id}`, method: 'DELETE' }),
+      query: (id) => ({ url: `leads/${id}/`, method: 'DELETE' }),
       invalidatesTags: ['Leads'],
     }),
     // Follow-ups endpoints

@@ -1,45 +1,47 @@
 import React from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/auth/usePermissions';
 
 interface TabItem {
   label: string;
   path: string;
+  permissions?: string[];
 }
 
 const TABS: Record<string, TabItem[]> = {
   'access-control': [
-    { label: 'Users Directory', path: '/users' },
-    { label: 'Roles List', path: '/roles' },
-    { label: 'Role Mapping', path: '/roles/mapping' },
-    { label: 'Role Hierarchy', path: '/role-hierarchy' },
-    { label: 'Permissions Registry', path: '/permissions' },
+    { label: 'Users Directory', path: '/users', permissions: ['USER_VIEW', 'USER_CREATE', 'USER_UPDATE'] },
+    { label: 'Roles List', path: '/roles', permissions: ['ROLE_VIEW'] },
+    { label: 'Role Mapping', path: '/roles/mapping', permissions: ['ROLE_UPDATE'] },
+    { label: 'Role Hierarchy', path: '/role-hierarchy', permissions: ['ROLE_VIEW'] },
+    { label: 'Permissions Registry', path: '/permissions', permissions: ['ROLE_VIEW', 'ROLE_UPDATE'] },
   ],
   'settings': [
-    { label: 'Settings Home', path: '/settings' },
-    { label: 'Company Profile', path: '/settings/company' },
-    { label: 'Billing & Plans', path: '/settings/billing' },
-    { label: 'Business Entities', path: '/settings/entities' },
-    { label: 'Departments', path: '/settings/departments' },
-    { label: 'ID Formats', path: '/settings/id-generation' },
-    { label: 'Doc Templates', path: '/settings/templates' },
-    { label: 'Certificates List', path: '/settings/certificates' },
-    { label: 'Onboarding Rules', path: '/settings/onboarding-rules' },
-    { label: 'Custom Fields', path: '/settings/dynamic-role-fields' },
-    { label: 'System Settings', path: '/settings/system' },
+    { label: 'Settings Home', path: '/settings', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Company Profile', path: '/settings/company', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Billing & Plans', path: '/settings/billing', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Business Entities', path: '/settings/entities', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Departments', path: '/settings/departments', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'ID Formats', path: '/settings/id-generation', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Doc Templates', path: '/settings/templates', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Certificates List', path: '/settings/certificates', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Onboarding Rules', path: '/settings/onboarding-rules', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Custom Fields', path: '/settings/dynamic-role-fields', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'System Settings', path: '/settings/system', permissions: ['ROLE_VIEW', 'SETTINGS_VIEW', 'SETTINGS_MANAGE'] },
   ],
   'hrms': [
-    { label: 'Attendance', path: '/attendance' },
-    { label: 'Leave', path: '/leave' },
-    { label: 'Payroll', path: '/payroll' },
-    { label: 'Branches', path: '/hrms/branches' },
-    { label: 'Attendance Shifts', path: '/hrms/shifts' },
+    { label: 'Attendance', path: '/attendance', permissions: ['ATTENDANCE_VIEW'] },
+    { label: 'Leave', path: '/leave', permissions: ['LEAVE_VIEW'] },
+    { label: 'Payroll', path: '/payroll', permissions: ['PAYROLL_VIEW', 'SALARY_VIEW', 'PAYSLIP_VIEW'] },
+    { label: 'Branches', path: '/hrms/branches', permissions: ['EMPLOYEE_VIEW', 'DEPARTMENT_VIEW', 'SETTINGS_MANAGE'] },
+    { label: 'Attendance Shifts', path: '/hrms/shifts', permissions: ['ATTENDANCE_VIEW', 'ATTENDANCE_MANAGE', 'SETTINGS_MANAGE'] },
   ],
   'crm': [
-    { label: 'Leads Directory', path: '/leads' },
-    { label: 'Pipeline', path: '/leads/pipeline' },
-    { label: 'Followups', path: '/leads/followups' },
-    { label: 'Lead Stages', path: '/crm/stages' },
+    { label: 'Leads Directory', path: '/leads', permissions: ['LEAD_VIEW', 'CRM_VIEW'] },
+    { label: 'Pipeline', path: '/leads/pipeline', permissions: ['LEAD_VIEW', 'CRM_VIEW'] },
+    { label: 'Followups', path: '/leads/followups', permissions: ['LEAD_VIEW', 'FOLLOWUP_VIEW', 'CRM_VIEW'] },
+    { label: 'Lead Stages', path: '/crm/stages', permissions: ['LEAD_MANAGE', 'CRM_MANAGE'] },
   ],
   'vendor': [
     { label: 'Vendor Dashboard', path: '/vendor/analytics' },
@@ -54,10 +56,13 @@ const TABS: Record<string, TabItem[]> = {
 };
 
 function ModuleTabsHeader({ moduleName }: { moduleName: string }) {
-  const items = TABS[moduleName];
+  const { hasAnyPermission } = usePermissions();
+  const items = TABS[moduleName]?.filter((item) =>
+    item.permissions?.length ? hasAnyPermission(item.permissions) : true
+  );
   const location = useLocation();
 
-  if (!items) return null;
+  if (!items || items.length === 0) return null;
 
   return (
     <div className="flex gap-1 border-b border-border pb-px mb-6 overflow-x-auto custom-scrollbar whitespace-nowrap">

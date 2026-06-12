@@ -7,13 +7,18 @@ import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   element: React.ReactElement;
   permission?: string;
+  permissions?: string[];
   module?: string;
   isPlatformAdminRequired?: boolean;
 }
 
-export default function ProtectedRoute({ element, permission, module, isPlatformAdminRequired }: ProtectedRouteProps) {
+export default function ProtectedRoute({ element, permission, permissions, module, isPlatformAdminRequired }: ProtectedRouteProps) {
   const auth = useAuth();
   const { hasPermission, isModuleEnabled, isPlatformAdmin } = usePermissions();
+  const requiredPermissions = permissions || (permission ? [permission] : []);
+  const hasRequiredPermission =
+    requiredPermissions.length === 0 ||
+    requiredPermissions.some((requiredPermission) => hasPermission(requiredPermission));
 
   if (!auth) return element;
 
@@ -28,7 +33,8 @@ export default function ProtectedRoute({ element, permission, module, isPlatform
     requiredModule: module,
     isModuleEnabled: module ? isModuleEnabled(module) : 'N/A',
     requiredPermission: permission,
-    hasPermission: permission ? hasPermission(permission) : 'N/A',
+    requiredPermissions,
+    hasPermission: requiredPermissions.length ? hasRequiredPermission : 'N/A',
     userPermissions: auth.permissions,
     userModules: auth.modules,
     userRole: auth.user?.role
@@ -46,6 +52,7 @@ export default function ProtectedRoute({ element, permission, module, isPlatform
     const debugLog = {
       currentPath: window.location.pathname,
       requiredPermission: permission,
+      requiredPermissions,
       requiredModule: module,
       userPermissions: auth.permissions,
       userModules: auth.modules,
@@ -65,6 +72,7 @@ export default function ProtectedRoute({ element, permission, module, isPlatform
     const debugLog = {
       currentPath: window.location.pathname,
       requiredPermission: permission,
+      requiredPermissions,
       requiredModule: module,
       userPermissions: auth.permissions,
       userModules: auth.modules,
@@ -80,10 +88,11 @@ export default function ProtectedRoute({ element, permission, module, isPlatform
     return <Navigate to="/unauthorized" replace />;
   }
 
-  if (module && !isModuleEnabled(module)) {
+  if (module && !isModuleEnabled(module) && requiredPermissions.length === 0) {
     const debugLog = {
       currentPath: window.location.pathname,
       requiredPermission: permission,
+      requiredPermissions,
       requiredModule: module,
       userPermissions: auth.permissions,
       userModules: auth.modules,
@@ -99,10 +108,11 @@ export default function ProtectedRoute({ element, permission, module, isPlatform
     return <Navigate to="/unauthorized" replace />;
   }
 
-  if (permission && !hasPermission(permission)) {
+  if (!hasRequiredPermission) {
     const debugLog = {
       currentPath: window.location.pathname,
       requiredPermission: permission,
+      requiredPermissions,
       requiredModule: module,
       userPermissions: auth.permissions,
       userModules: auth.modules,
