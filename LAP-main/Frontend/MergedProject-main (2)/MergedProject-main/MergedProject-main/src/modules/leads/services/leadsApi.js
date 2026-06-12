@@ -17,12 +17,44 @@ export const leadsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Leads', 'FollowUps'],
+  tagTypes: ['Leads', 'LeadForms', 'LeadOptions', 'LeadUsers', 'FollowUps'],
   endpoints: (builder) => ({
     getLeads: builder.query({
       query: () => 'leads/',
       providesTags: (result) =>
         result ? [...result.map(({ id }) => ({ type: 'Leads', id })), 'Leads'] : ['Leads'],
+    }),
+    getLead: builder.query({
+      query: (id) => `leads/${id}/`,
+      providesTags: (result, error, id) => [{ type: 'Leads', id }],
+    }),
+    getLeadForms: builder.query({
+      query: () => 'leads/forms/',
+      providesTags: ['LeadForms'],
+    }),
+    syncLeadFormFields: builder.mutation({
+      query: ({ formId, fields }) => ({
+        url: `leads/forms/${formId}/fields/`,
+        method: 'PUT',
+        body: { fields },
+      }),
+      invalidatesTags: ['LeadForms'],
+    }),
+    getLeadOptions: builder.query({
+      query: () => 'leads/options/',
+      providesTags: ['LeadOptions'],
+    }),
+    saveLeadOptions: builder.mutation({
+      query: (payload) => ({
+        url: 'leads/options/',
+        method: 'PUT',
+        body: payload,
+      }),
+      invalidatesTags: ['LeadOptions', 'Leads'],
+    }),
+    getLeadUsers: builder.query({
+      query: () => 'leads/users/',
+      providesTags: ['LeadUsers'],
     }),
     getLeadSchema: builder.query({
       query: () => 'modules/leads/form-schema',
@@ -41,7 +73,14 @@ export const leadsApi = createApi({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Leads', id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Leads', id }, 'Leads'],
+    }),
+    assignLeadCounselor: builder.mutation({
+      query: ({ leadId, counselorId }) => ({
+        url: `leads/${leadId}/assign/${counselorId}/`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { leadId }) => [{ type: 'Leads', id: leadId }, 'Leads'],
     }),
     deleteLead: builder.mutation({
       query: (id) => ({ url: `leads/${id}/`, method: 'DELETE' }),
@@ -49,9 +88,17 @@ export const leadsApi = createApi({
     }),
     // Follow-ups endpoints
     getFollowUps: builder.query({
-      query: () => 'leads/followups/',
+      query: (leadId) => leadId ? `leads/followups/?lead_id=${leadId}` : 'leads/followups/',
       providesTags: (result) =>
         result ? [...result.map(({ id }) => ({ type: 'FollowUps', id })), 'FollowUps'] : ['FollowUps'],
+    }),
+    createFollowUp: builder.mutation({
+      query: (payload) => ({
+        url: 'leads/followups/',
+        method: 'POST',
+        body: payload,
+      }),
+      invalidatesTags: ['FollowUps', 'Leads'],
     }),
     updateFollowUp: builder.mutation({
       query: ({ id, ...patch }) => ({
@@ -59,7 +106,7 @@ export const leadsApi = createApi({
         method: 'PATCH',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'FollowUps', id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'FollowUps', id }, 'FollowUps', 'Leads'],
     }),
     // Schema CRUD endpoints
     createLeadFormSchema: builder.mutation({
@@ -94,10 +141,17 @@ export const leadsApi = createApi({
 export const {
   useGetLeadsQuery,
   useGetLeadQuery,
+  useGetLeadFormsQuery,
+  useSyncLeadFormFieldsMutation,
+  useGetLeadOptionsQuery,
+  useSaveLeadOptionsMutation,
+  useGetLeadUsersQuery,
   useCreateLeadMutation,
   useUpdateLeadMutation,
   useDeleteLeadMutation,
+  useAssignLeadCounselorMutation,
   useGetLeadSchemaQuery,
   useGetFollowUpsQuery,
+  useCreateFollowUpMutation,
   useUpdateFollowUpMutation,
 } = leadsApi;

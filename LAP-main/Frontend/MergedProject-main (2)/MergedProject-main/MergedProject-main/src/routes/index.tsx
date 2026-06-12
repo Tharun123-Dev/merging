@@ -63,6 +63,8 @@ import LeadDetails from "@/modules/leads/pages/LeadDetails";
 import LeadPipeline from "@/modules/leads/pages/LeadPipeline";
 import LeadFollowups from "@/modules/leads/pages/LeadFollowups";
 import LeadsDashboard from "@/modules/leads/pages/LeadsDashboard";
+import FormBuilder from "@/modules/leads/pages/FormBuilder";
+import LeadOptions from "@/modules/leads/pages/LeadOptions";
 
 // Authentication & Public pages
 import Login from "@/pages/Login";
@@ -200,10 +202,15 @@ export function AppRoutes() {
         <Route element={<CrmLayout />}>
           <Route path="leads" element={<ProtectedRoute element={<LeadsList />} module="crm" permission="LEAD_VIEW" />} />
           <Route path="leads/create" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
-          <Route path="leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="crm" permission="LEAD_VIEW" />} />
+          <Route path="leads/student-form" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
+          <Route path="leads/add-lead" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
           <Route path="leads/pipeline" element={<ProtectedRoute element={<LeadPipeline />} module="crm" permission="LEAD_VIEW" />} />
           <Route path="leads/followups" element={<ProtectedRoute element={<LeadFollowups />} module="crm" permissions={["LEAD_VIEW", "FOLLOWUP_VIEW"]} />} />
+          <Route path="leads/follow-ups" element={<ProtectedRoute element={<LeadFollowups />} module="crm" permissions={["LEAD_VIEW", "FOLLOWUP_VIEW"]} />} />
           <Route path="leads/dashboard" element={<ProtectedRoute element={<LeadsDashboard />} module="crm" permissions={["LEAD_VIEW", "LEAD_ANALYTICS_VIEW"]} />} />
+          <Route path="leads/form-builder" element={<ProtectedRoute element={<FormBuilder />} module="crm" permissions={["LEAD_MANAGE", "CRM_MANAGE", "MANAGE_LEAD_FORMS"]} />} />
+          <Route path="leads/options" element={<ProtectedRoute element={<LeadOptions />} module="crm" permissions={["LEAD_MANAGE", "CRM_MANAGE", "MANAGE_LEAD_FORMS"]} />} />
+          <Route path="leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="crm" permission="LEAD_VIEW" />} />
           <Route path="crm/stages" element={<ProtectedRoute element={<LeadStageList />} module="crm" permissions={["LEAD_VIEW", "LEAD_MANAGE"]} />} />
           <Route path="crm/stages/create" element={<ProtectedRoute element={<LeadStageForm />} module="crm" permission="LEAD_MANAGE" />} />
           <Route path="crm/stages/edit/:id" element={<ProtectedRoute element={<LeadStageForm />} module="crm" permission="LEAD_MANAGE" />} />
@@ -252,7 +259,13 @@ export function AppRoutes() {
         <Route path="dashboard/settings/system" element={<Navigate to="/settings/system" replace />} />
         <Route path="dashboard/permissions" element={<Navigate to="/permissions" replace />} />
         <Route path="dashboard/tasks" element={<Navigate to="/tasks" replace />} />
-        <Route path="dashboard/leads/*" element={<Navigate to="/leads" replace />} />
+        <Route path="dashboard/leads" element={<Navigate to="/leads" replace />} />
+        <Route path="dashboard/leads/student-form" element={<Navigate to="/leads/student-form" replace />} />
+        <Route path="dashboard/leads/add-lead" element={<Navigate to="/leads/add-lead" replace />} />
+        <Route path="dashboard/leads/follow-ups" element={<Navigate to="/leads/follow-ups" replace />} />
+        <Route path="dashboard/leads/form-builder" element={<Navigate to="/leads/form-builder" replace />} />
+        <Route path="dashboard/leads/options" element={<Navigate to="/leads/options" replace />} />
+        <Route path="dashboard/leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="crm" permission="LEAD_VIEW" />} />
         <Route path="dashboard/revenue" element={<Navigate to="/revenue" replace />} />
         <Route path="dashboard/affiliate" element={<Navigate to="/affiliate" replace />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />

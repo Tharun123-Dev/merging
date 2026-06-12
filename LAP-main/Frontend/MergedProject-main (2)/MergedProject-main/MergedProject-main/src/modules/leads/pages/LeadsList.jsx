@@ -1,125 +1,166 @@
-// src/modules/leads/pages/LeadsList.jsx
-import React from 'react';
-import { useLeads } from '@/modules/leads/hooks/useLeads';
-import LeadTable from '@/modules/leads/components/LeadTable';
-import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card } from '@/components/ui/card';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserPlus, Loader2, Users, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { leadsApi } from '@/modules/leads/services/leadsApi';
+import { Download, Loader2, Plus, Search, Users } from 'lucide-react';
 import { useDispatch } from 'react-redux';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import LeadTable from '@/modules/leads/components/LeadTable';
+import { useLeads } from '@/modules/leads/hooks/useLeads';
+import { leadsApi, useGetLeadOptionsQuery, useGetLeadUsersQuery } from '@/modules/leads/services/leadsApi';
+import {
+  getLeadCounselor,
+  getLeadCourse,
+  getLeadName,
+  getLeadSource,
+  optionLabel,
+  optionValue,
+} from '@/modules/leads/utils/leadUi';
+
+const exportCsv = (leads) => {
+  const rows = [
+    ['Student Name', 'Email', 'Phone', 'Course', 'Counselor', 'Source', 'Status', 'Created'],
+    ...leads.map((lead) => [
+      getLeadName(lead),
+      lead.email || '',
+      lead.phone || '',
+      getLeadCourse(lead),
+      getLeadCounselor(lead),
+      getLeadSource(lead),
+      lead.status || 'New',
+      lead.created_at || '',
+    ]),
+  ];
+  const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'leads.csv';
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
 
 export default function LeadsList() {
-  const { data: leads = [], isLoading, isError } = useLeads();
   const dispatch = useDispatch();
+  const { data: leads = [], isLoading, isError } = useLeads();
+  const { data: options } = useGetLeadOptionsQuery();
+  const { data: users = [] } = useGetLeadUsersQuery();
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [course, setCourse] = useState('');
+  const [counselor, setCounselor] = useState('');
 
-  const handleRefresh = () => {
-    dispatch(leadsApi.util.invalidateTags(['Leads']));
-  };
+  const statuses = options?.statuses || [];
+  const courses = useMemo(() => [...new Set(leads.map(getLeadCourse).filter((item) => item && item !== 'N/A'))], [leads]);
 
-  const totalLeads = leads.length;
-  const qualifiedLeads = leads.filter(l => l.status === 'Qualified').length;
-  const highPriorityLeads = leads.filter(l => l.priority === 'High').length;
+  const filteredLeads = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return leads.filter((lead) => {
+      const matchesSearch = !query || [
+        getLeadName(lead),
+        lead.email,
+        lead.phone,
+        getLeadCourse(lead),
+        getLeadSource(lead),
+      ].some((value) => String(value || '').toLowerCase().includes(query));
+      const matchesStatus = !status || lead.status === status;
+      const matchesCourse = !course || getLeadCourse(lead) === course;
+      const matchesCounselor = !counselor || String(lead.counselor?.id || lead.counselor_id || '') === counselor;
+      return matchesSearch && matchesStatus && matchesCourse && matchesCounselor;
+    });
+  }, [course, counselor, leads, search, status]);
+
+  const cards = useMemo(() => {
+    const statusCards = statuses.map((item) => {
+      const value = optionValue(item);
+      return {
+        label: optionLabel(item),
+        count: leads.filter((lead) => (lead.status || 'New') === value).length,
+      };
+    });
+    return [{ label: 'All Leads', count: leads.length, active: true }, ...statusCards];
+  }, [leads, statuses]);
+
+  const refresh = () => dispatch(leadsApi.util.invalidateTags(['Leads']));
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Leads Pipeline"
-        description="Monitor, manage, and convert incoming leads through your marketing funnel."
-        actions={
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-normal text-slate-950">Leads Directory</h1>
+          <p className="mt-2 text-slate-500">Manage, filter, and schedule discussions for all registered student queries.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="gap-2 rounded-xl bg-white" onClick={() => exportCsv(filteredLeads)}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Link to="/leads/add-lead">
+            <Button className="gap-2 rounded-xl bg-violet-600 px-5 text-white hover:bg-violet-700">
+              <Plus className="h-4 w-4" />
+              Add Lead
             </Button>
-            <Link to="/leads/create">
-              <Button size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/95 transition-all">
-                <UserPlus className="h-4 w-4" />
-                Create Lead
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      {/* KPI Stats Section */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-6 relative overflow-hidden border bg-card hover:shadow-md transition-all group">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary transition-all group-hover:scale-110">
-              <Users className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Leads</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{isLoading ? '...' : totalLeads}</h3>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 relative overflow-hidden border bg-card hover:shadow-md transition-all group">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 transition-all group-hover:scale-110">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Qualified Leads</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{isLoading ? '...' : qualifiedLeads}</h3>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 relative overflow-hidden border bg-card hover:shadow-md transition-all group">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 transition-all group-hover:scale-110">
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">High Priority</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{isLoading ? '...' : highPriorityLeads}</h3>
-            </div>
-          </div>
-        </Card>
+          </Link>
+        </div>
       </div>
 
-      {/* Content Section */}
-      <Card className="border bg-card shadow-sm overflow-hidden rounded-xl">
-        <div className="p-6 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Lead Records</h2>
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-            {leads.length} total
-          </span>
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        {cards.map((card, index) => (
+          <Card key={`${card.label}-${index}`} className={`min-h-44 rounded-2xl p-5 shadow-sm ${card.active ? 'bg-slate-950 text-white' : 'bg-white'}`}>
+            <div className="mb-8 flex items-center justify-between">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${card.active ? 'bg-white/10' : 'bg-indigo-50 text-indigo-600'}`}>
+                <Users className="h-5 w-5" />
+              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${card.active ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                {card.active ? 'Active' : 'View'}
+              </span>
+            </div>
+            <div className="text-3xl font-bold">{isLoading ? '...' : card.count}</div>
+            <div className={`mt-2 font-bold ${card.active ? 'text-white' : 'text-slate-950'}`}>{card.label}</div>
+            <div className={`mt-1 text-sm ${card.active ? 'text-white/70' : 'text-slate-400'}`}>{card.active ? 'Complete directory' : 'Current status'}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="rounded-3xl bg-white p-6 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[2fr_1fr_1fr_1fr]">
+          <label className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search leads..."
+              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+            />
+          </label>
+          <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm">
+            <option value="">All Statuses</option>
+            {statuses.map((item) => <option key={optionValue(item)} value={optionValue(item)}>{optionLabel(item)}</option>)}
+          </select>
+          <select value={course} onChange={(event) => setCourse(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm">
+            <option value="">All Courses</option>
+            {courses.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+          <select value={counselor} onChange={(event) => setCounselor(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm">
+            <option value="">All Counselors</option>
+            {users.map((user) => <option key={user.id} value={user.id}>{user.full_name || user.email}</option>)}
+          </select>
         </div>
-        
+        <div className="mt-7 text-sm font-bold uppercase text-slate-400">Found {filteredLeads.length} Leads</div>
+      </Card>
+
+      <Card className="overflow-hidden rounded-3xl bg-white shadow-sm">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading leads data...</p>
+          <div className="flex items-center justify-center gap-3 py-20 text-slate-500">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Loading leads...
           </div>
         ) : isError ? (
-          <div className="p-12 text-center text-muted-foreground border-t border-dashed">
-            <p className="font-semibold text-destructive">Failed to fetch leads records.</p>
-            <p className="text-xs mt-1">Please ensure the backend server is running.</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={handleRefresh}>
-              Retry Connection
-            </Button>
-          </div>
-        ) : leads.length === 0 ? (
-          <div className="p-16 text-center text-muted-foreground border-t">
-            <Users className="mx-auto h-12 w-12 opacity-25 mb-4" />
-            <p className="font-semibold">No Leads Found</p>
-            <p className="text-xs mt-1">Get started by creating your first lead in the system.</p>
-            <Link to="/leads/create">
-              <Button size="sm" className="mt-4 gap-2">
-                <UserPlus className="h-4 w-4" />
-                Add First Lead
-              </Button>
-            </Link>
+          <div className="py-16 text-center">
+            <p className="font-semibold text-rose-600">Failed to fetch lead records.</p>
+            <Button variant="outline" className="mt-4" onClick={refresh}>Retry</Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <LeadTable leads={leads} />
-          </div>
+          <LeadTable leads={filteredLeads} />
         )}
       </Card>
     </div>

@@ -16,6 +16,8 @@ from .serializers import (
 from . import services
 from accounts.models import User
 from notifications.utils import notify_permission, notify_user
+from utils.java_auth import _base_role
+from utils.java_bridge import list_users
 
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
@@ -73,6 +75,107 @@ DEFAULT_LEAD_OPTIONS = [
 
 def _tenant_id(user):
     return getattr(user, 'tenant_id', None) or 'default'
+
+
+def _first_present(payload, *keys):
+    for key in keys:
+        value = payload.get(key) if isinstance(payload, dict) else None
+        if value not in (None, ''):
+            return value
+    return None
+
+
+def _payload_values(payload, *keys):
+    values = set()
+    for key in keys:
+        raw = payload.get(key) if isinstance(payload, dict) else None
+        if isinstance(raw, str):
+            values.update(item.strip() for item in raw.split(',') if item.strip())
+        elif isinstance(raw, (list, tuple, set)):
+            values.update(str(item).strip() for item in raw if str(item).strip())
+    return values
+
+
+def _normalize_external_user(payload, tenant_id):
+    email = _first_present(payload, 'email', 'username', 'userEmail', 'mail')
+    external_id = _first_present(payload, 'id', 'userId', 'user_id', 'sub')
+    if not email and external_id:
+        email = f'java-user-{external_id}@lap.local'
+    if not email:
+        return None
+
+    role_value = _first_present(payload, 'roleName', 'role', 'authority', 'designation') or ''
+    permissions = _payload_values(payload, 'permissions', 'permissionCodes', 'authorities')
+    modules = _payload_values(payload, 'modules', 'moduleCodes', 'enabledModules')
+    user_tenant = str(_first_present(payload, 'tenantCode', 'tenantId', 'tenant_id', 'companyId') or tenant_id)
+    full_name = _first_present(payload, 'fullName', 'full_name', 'name', 'displayName')
+    first_name = _first_present(payload, 'firstName', 'first_name') or ''
+    last_name = _first_present(payload, 'lastName', 'last_name') or ''
+    if not full_name:
+        full_name = f'{first_name} {last_name}'.strip() or email
+
+    return {
+        'external_id': str(external_id or email),
+        'email': str(email),
+        'full_name': str(full_name),
+        'first_name': str(first_name),
+        'last_name': str(last_name),
+        'role': str(role_value),
+        'base_role': _base_role(str(role_value)),
+        'permissions': permissions,
+        'modules': modules,
+        'tenant_id': user_tenant,
+        'is_active': payload.get('isActive', payload.get('active', True)) is not False,
+    }
+
+
+def _is_counselor_payload(user_data):
+    role = user_data['role'].lower()
+    permissions = {permission.upper().replace('.', '_').replace(':', '_') for permission in user_data['permissions']}
+    modules = {module.upper() for module in user_data['modules']}
+    return (
+        user_data['base_role'] == 'counselor'
+        or 'counsel' in role
+        or 'LEAD_CREATE_FOLLOWUP' in permissions
+        or 'CREATE_FOLLOWUP' in permissions
+        or 'FOLLOWUP_CREATE' in permissions
+        or 'LEAD_UPDATE' in permissions
+        or 'CRM_UPDATE' in permissions
+        or ('CRM' in modules and any('FOLLOW' in permission for permission in permissions))
+    )
+
+
+def _sync_external_user(user_data):
+    user = User.objects.filter(email=user_data['email']).first()
+    if not user:
+        user = User(
+            username=user_data['email'],
+            email=user_data['email'],
+            tenant_id=user_data['tenant_id'],
+            role=user_data['base_role'],
+            is_active=user_data['is_active'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
+        )
+        user.set_unusable_password()
+        user.save()
+        return user
+
+    updates = []
+    for field, value in (
+        ('username', user_data['email']),
+        ('tenant_id', user_data['tenant_id']),
+        ('role', user_data['base_role']),
+        ('is_active', user_data['is_active']),
+        ('first_name', user_data['first_name']),
+        ('last_name', user_data['last_name']),
+    ):
+        if getattr(user, field) != value:
+            setattr(user, field, value)
+            updates.append(field)
+    if updates:
+        user.save(update_fields=updates)
+    return user
 
 
 def _ensure_default_lead_options(tenant_id):
@@ -434,6 +537,9 @@ class FollowUpListCreateView(APIView):
 class FollowUpDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def patch(self, request, followup_id):
+        return self.put(request, followup_id)
+
     def put(self, request, followup_id):
         if not _has_any_perm(request.user, 'create_followup', 'edit_lead'):
             return _denied()
@@ -521,16 +627,56 @@ class LeadUsersListView(APIView):
     def get(self, request):
         if not _has_any_perm(request.user, 'view_leads', 'create_lead', 'assign_lead', 'create_followup'):
             return _denied()
+        tenant_id = getattr(request.user, 'tenant_id', None) or _tenant_id(request.user)
+        java_token = getattr(request.user, '_java_token', None)
+        external_users = list_users(java_token) if java_token else []
+        counselors = []
+        seen_emails = set()
+
+        for payload in external_users:
+            user_data = _normalize_external_user(payload, tenant_id)
+            if not user_data or not user_data['is_active']:
+                continue
+            if tenant_id and user_data['tenant_id'] != str(tenant_id):
+                continue
+            if not _is_counselor_payload(user_data):
+                continue
+            user = _sync_external_user(user_data)
+            seen_emails.add(user.email.lower())
+            counselors.append({
+                'id': user.id,
+                'external_id': user_data['external_id'],
+                'full_name': user_data['full_name'],
+                'email': user.email,
+                'role': user_data['role'] or user.role,
+                'source': 'java',
+            })
+
+        if counselors:
+            return Response(counselors)
+
         users = User.objects.filter(is_active=True)
-        tenant_id = getattr(request.user, 'tenant_id', None)
         if tenant_id:
             users = users.filter(tenant_id=tenant_id)
+        users = [
+            user for user in users
+            if (
+                user.email.lower() not in seen_emails
+                and (
+                    user.role == 'counselor'
+                    or user.has_perm_code('create_followup')
+                    or user.has_perm_code('edit_lead')
+                )
+            )
+        ]
         return Response([
             {
                 'id': user.id,
+                'external_id': None,
                 'full_name': user.get_full_name() or user.username,
                 'email': user.email,
                 'role': user.role,
+                'source': 'local-fallback',
             }
             for user in users
         ])
