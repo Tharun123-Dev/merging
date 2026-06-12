@@ -33,8 +33,8 @@ export default function Performance() {
   useEffect(() => {
     const fetchPerformanceData = async () => {
       try {
-        const response = await rolesApi.get('/vendor-performance');
-        if (response.data.success) {
+        const response = await rolesApi.get('/api/vendor-performance');
+        if (response.data && response.data.data) {
           setData(response.data.data);
         }
       } catch (error) {
@@ -52,13 +52,13 @@ export default function Performance() {
       className="space-y-6"
     >
       <div>
-        <h2 className="text-2xl font-bold text-slate-50">Vendor Performance Analytics</h2>
-        <p className="text-slate-400 text-sm mt-1">Scorecards, KPI tracking, and comparative analytics</p>
+        <h2 className="text-2xl font-bold text-foreground">Vendor Performance Analytics</h2>
+        <p className="text-muted-foreground text-sm mt-1">Scorecards, KPI tracking, and comparative analytics</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-slate-50 mb-6">Top Vendor Scorecard ({data.topVendorName})</h3>
+        <div className="bg-card border border-border shadow-sm rounded-xl p-4 sm:p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-6">Top Vendor Scorecard ({data.topVendorName})</h3>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data.scorecard}>
@@ -72,16 +72,16 @@ export default function Performance() {
           </div>
         </div>
 
-        <div className="glass-panel p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-slate-50 mb-6">KPI Metrics (Fleet Average)</h3>
+        <div className="bg-card border border-border shadow-sm rounded-xl p-4 sm:p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-6">KPI Metrics (Fleet Average)</h3>
           <div className="space-y-6">
             {data.kpis.map((kpi, i) => (
               <div key={i}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-300">{kpi.label}</span>
-                  <span className="font-semibold text-slate-50">{kpi.val}%</span>
+                  <span className="text-foreground font-medium">{kpi.label}</span>
+                  <span className="font-semibold text-foreground">{kpi.val}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div className={`${kpi.color} h-2 rounded-full`} style={{ width: `${kpi.val}%` }}></div>
                 </div>
               </div>
