@@ -74,12 +74,17 @@ const permissionCodesFromUser = (user: Record<string, unknown>) => {
 };
 
 const selectedPermissionIdsFromUser = (user: Record<string, unknown>, permissions: Permission[]) => {
+  const role = normalizePermissionKey(user.roleName || user.role || '');
+  const isAdminRole = role.includes('ADMIN') || role === 'SUPER_ADMIN' || role === 'SUPERADMIN';
   const codes = permissionCodesFromUser(user);
   if (codes.length > 0) {
     const codeSet = new Set(codes);
     const mappedIds = permissions
       .filter((permission) => codeSet.has(normalizePermissionKey(permission.permissionKey)))
       .map((permission) => permission.id);
+    if (!isAdminRole && mappedIds.length === permissions.length) {
+      return [];
+    }
     return mappedIds;
   }
 
@@ -87,6 +92,9 @@ const selectedPermissionIdsFromUser = (user: Record<string, unknown>, permission
   const mappedIds = ids
     .map((id) => Number(id))
     .filter((id) => Number.isFinite(id) && permissions.some((permission) => permission.id === id));
+  if (!isAdminRole && mappedIds.length === permissions.length) {
+    return [];
+  }
   return mappedIds;
 };
 
@@ -95,63 +103,6 @@ interface UserFormProps {
   onClose?: () => void;
 }
 
-const mockRoles: Role[] = [
-  { id: 1, name: 'SUPER_ADMIN', active: true },
-  { id: 2, name: 'ADMIN', active: true },
-  { id: 3, name: 'MANAGER', active: true },
-  { id: 4, name: 'EMPLOYEE', active: true }
-];
-
-const mockEntities: BusinessEntity[] = [
-  { id: 1, entityCode: 'ENT-CORP', companyName: 'Universal SaaS Corp', active: true, showInUserForm: true },
-  { id: 2, entityCode: 'ENT-APAC', companyName: 'Universal APAC Ltd', active: true, showInUserForm: true }
-];
-
-const mockDepartments: Department[] = [
-  { id: 1, deptCode: 'DEP-ENG', deptName: 'Engineering', active: true, showInUserForm: true },
-  { id: 2, deptCode: 'DEP-HR', deptName: 'Human Resources', active: true, showInUserForm: true },
-  { id: 3, deptCode: 'DEP-MKT', deptName: 'Marketing', active: true, showInUserForm: true }
-];
-
-const mockPermissions: Permission[] = [
-  // Vendor Module
-  { id: 1, module: 'Vendor', action: 'View Vendors', permissionKey: 'VENDOR_VIEW', description: 'Can view vendors directory and profile details', active: true },
-  { id: 2, module: 'Vendor', action: 'Create Vendor', permissionKey: 'VENDOR_CREATE', description: 'Can onboard new vendors', active: true },
-  { id: 3, module: 'Vendor', action: 'Update Vendor', permissionKey: 'VENDOR_UPDATE', description: 'Can modify vendor profiles and contracts', active: true },
-  { id: 4, module: 'Vendor', action: 'Delete Vendor', permissionKey: 'VENDOR_DELETE', description: 'Can archive or remove vendor records', active: true },
-  { id: 5, module: 'Vendor', action: 'Approve Vendor Contracts', permissionKey: 'VENDOR_APPROVE', description: 'Can approve vendor agreements', active: true },
-
-  // PO Module
-  { id: 10, module: 'PO', action: 'View POs', permissionKey: 'PO_VIEW', description: 'Can view purchase orders', active: true },
-  { id: 11, module: 'PO', action: 'Create PO', permissionKey: 'PO_CREATE', description: 'Can draft and issue new purchase orders', active: true },
-  { id: 12, module: 'PO', action: 'Update PO', permissionKey: 'PO_UPDATE', description: 'Can edit pending purchase orders', active: true },
-  { id: 13, module: 'PO', action: 'Delete PO', permissionKey: 'PO_DELETE', description: 'Can cancel or remove purchase orders', active: true },
-  { id: 14, module: 'PO', action: 'Approve PO', permissionKey: 'PO_APPROVE', description: 'Can release purchase order budgets', active: true },
-
-  // Performance Module
-  { id: 20, module: 'Performance', action: 'View Reviews', permissionKey: 'PERFORMANCE_VIEW', description: 'Can view employee performance reviews', active: true },
-  { id: 21, module: 'Performance', action: 'Create Review', permissionKey: 'PERFORMANCE_CREATE', description: 'Can initiate a review cycle or submit feedback', active: true },
-  { id: 22, module: 'Performance', action: 'Update Review', permissionKey: 'PERFORMANCE_UPDATE', description: 'Can edit review drafts and parameters', active: true },
-  { id: 23, module: 'Performance', action: 'Delete Review', permissionKey: 'PERFORMANCE_DELETE', description: 'Can remove performance assessments', active: true },
-
-  // Marketing Module
-  { id: 30, module: 'Marketing', action: 'View Campaigns', permissionKey: 'MARKETING_VIEW', description: 'Can view marketing campaigns and analytics', active: true },
-  { id: 31, module: 'Marketing', action: 'Create Campaign', permissionKey: 'MARKETING_CREATE', description: 'Can set up marketing leads and campaign pipelines', active: true },
-  { id: 32, module: 'Marketing', action: 'Update Campaign', permissionKey: 'MARKETING_UPDATE', description: 'Can tweak running campaigns and followup parameters', active: true },
-  { id: 33, module: 'Marketing', action: 'Delete Campaign', permissionKey: 'MARKETING_DELETE', description: 'Can clean up obsolete marketing materials', active: true },
-
-  // Tenant Module
-  { id: 40, module: 'Tenant', action: 'View Tenants', permissionKey: 'TENANT_VIEW', description: 'Can inspect active platform tenant spaces', active: true },
-  { id: 41, module: 'Tenant', action: 'Create Tenant', permissionKey: 'TENANT_CREATE', description: 'Can provision new tenant workspaces', active: true },
-  { id: 42, module: 'Tenant', action: 'Update Tenant', permissionKey: 'TENANT_UPDATE', description: 'Can update billing plans or features of tenants', active: true },
-  { id: 43, module: 'Tenant', action: 'Delete Tenant', permissionKey: 'TENANT_DELETE', description: 'Can suspend or delete tenant instances', active: true },
-
-  // User Module
-  { id: 50, module: 'User', action: 'View Users', permissionKey: 'USER_VIEW', description: 'Can browse the organization user directory', active: true },
-  { id: 51, module: 'User', action: 'Create User', permissionKey: 'USER_CREATE', description: 'Can onboard new employee profiles', active: true },
-  { id: 52, module: 'User', action: 'Update User', permissionKey: 'USER_UPDATE', description: 'Can modify user details and permission matrix', active: true },
-  { id: 53, module: 'User', action: 'Delete User', permissionKey: 'USER_DELETE', description: 'Can terminate user accounts and roles', active: true },
-];
 
 export default function UserForm({ userId, onClose }: UserFormProps = {}) {
   const { id: paramId } = useParams();
@@ -230,23 +181,7 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
           console.warn('Backend permissions endpoint failed, falling back to mock permissions:', err);
 
         }
-
-        // Merge backend fetched permissions with any missing mock permissions
-        const mergedPerms = [...fetchedPerms];
-        const fetchedKeys = new Set(fetchedPerms.map(p => normalizePermissionKey(p.permissionKey)));
-        mockPermissions.forEach(mockP => {
-          const mockKey = normalizePermissionKey(mockP.permissionKey);
-          if (!fetchedKeys.has(mockKey)) {
-            const maxId = mergedPerms.reduce((max, p) => p.id > max ? p.id : max, 0);
-            mergedPerms.push({
-              ...mockP,
-              id: maxId + 1
-            });
-            fetchedKeys.add(mockKey);
-          }
-        });
-
-        setAvailablePermissions(mergedPerms);
+        setAvailablePermissions(fetchedPerms);
 
         // Fetch Business Entities
         let fetchedEntities: BusinessEntity[] = [];
@@ -428,8 +363,8 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
       {toast && (
         <div
           className={`fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg border text-sm transition-all duration-300 ${toast.type === 'success'
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-455'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-rose-500/10 border-rose-500/20 text-rose-455'
             }`}
           role="alert"
         >
