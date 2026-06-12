@@ -33,7 +33,7 @@ const parseToken = (jwtToken: string | null): User | null => {
     const role = storedRole || payload.role || payload.roleName || 'STAFF';
     const normalizedRole = String(role).toUpperCase().replace(/[^A-Z0-9]+/g, '_');
     const isPlatformRole = ['SUPER_ADMIN', 'SUPERADMIN', 'PLATFORM_ADMIN', 'SYSTEM_ADMIN'].includes(normalizedRole);
-    
+
     return {
       id: payload.id || payload.userId,
       email: payload.sub,
@@ -143,13 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (newToken: string, newPermissions: string[], newModules: string[], newTenantCode?: string, newRole?: string) => {
     let finalPermissions = newPermissions;
     let finalModules = newModules;
-    const parsedUser = parseToken(newToken);
+    if (newRole) localStorage.setItem(\'role\', newRole);
+      const parsedUser = parseToken(newToken);
     localStorage.setItem('token', newToken);
     localStorage.setItem('permissions', JSON.stringify(finalPermissions));
     localStorage.setItem('modules', JSON.stringify(finalModules));
-    
+
     const tenantCode = newTenantCode || parsedUser?.tenantCode;
-    
+
     if (tenantCode) {
       localStorage.setItem('tenantCode', tenantCode.toUpperCase());
     } else {

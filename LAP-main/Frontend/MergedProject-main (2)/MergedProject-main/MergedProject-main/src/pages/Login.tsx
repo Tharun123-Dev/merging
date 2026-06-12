@@ -35,14 +35,14 @@ export default function Login() {
         password
       });
 
-      const { token, tenantCode: respTenantCode, roleName, permissions, modules } = response.data;
+      console.log(\'LOGIN RESPONSE:\', response.data); const { token, tenantCode: respTenantCode, roleName, permissions, modules } = response.data;
       
       authLogin(token, permissions, modules, respTenantCode, roleName);
-      
+
       const isVendor = roleName && roleName.toUpperCase() === 'VENDOR';
       const storeRole = isVendor ? 'VENDOR' : 'STAFF';
       setCurrentUser(email, storeRole);
-      
+
       if (storeRole === 'VENDOR') {
         navigate('/vendor-portal');
       } else {
@@ -74,7 +74,7 @@ export default function Login() {
         <Modal isOpen={!!error} onClose={() => setError('')} title="Login Failed">
           <div className="text-center text-slate-300 p-4">
             <p className="mb-6 text-rose-400">{error}</p>
-            <button 
+            <button
               onClick={() => setError('')}
               className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors"
             >
@@ -116,7 +116,7 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        
+
         <div className="text-center mt-8 relative z-10">
           <span className="text-slate-400 text-sm">
             Don't have an account? <Link to="/signup" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">Sign Up</Link>
