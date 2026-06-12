@@ -13,6 +13,10 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
+      '/api/leads': { target: 'http://localhost:8000', changeOrigin: true },
+      '/tasks': { target: 'http://localhost:8000', changeOrigin: true },
+      '/attendance': { target: 'http://localhost:8000', changeOrigin: true },
+      '/affiliate': { target: 'http://localhost:8000', changeOrigin: true },
       '/api': {
         target: process.env.VITE_ROLES_API_BASE ?? 'http://100.85.146.60:8080',
         changeOrigin: true,

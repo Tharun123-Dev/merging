@@ -35,7 +35,7 @@ export default function Login() {
         password
       });
 
-      const { token, tenantCode: respTenantCode, roleName, permissions, modules } = response.data;
+      console.log(\'LOGIN RESPONSE:\', response.data); const { token, tenantCode: respTenantCode, roleName, permissions, modules } = response.data;
       
       authLogin(token, permissions, modules, respTenantCode, roleName);
       
