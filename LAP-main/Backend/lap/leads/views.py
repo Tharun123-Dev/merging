@@ -80,8 +80,6 @@ def _tenant_id(user):
 def _first_present(payload, *keys):
     for key in keys:
         value = payload.get(key) if isinstance(payload, dict) else None
-        if isinstance(value, dict):
-            value = _first_present(value, 'name', 'displayName', 'roleName', 'code', 'id')
         if value not in (None, ''):
             return value
     return None
@@ -99,32 +97,22 @@ def _payload_values(payload, *keys):
 
 
 def _normalize_external_user(payload, tenant_id):
-    email = _first_present(payload, 'email', 'username', 'userEmail', 'mail', 'emailAddress')
-    external_id = _first_present(payload, 'id', 'userId', 'user_id', 'sub', 'employeeId')
+    email = _first_present(payload, 'email', 'username', 'userEmail', 'mail')
+    external_id = _first_present(payload, 'id', 'userId', 'user_id', 'sub')
     if not email and external_id:
         email = f'java-user-{external_id}@lap.local'
     if not email:
         return None
 
-    role_value = _first_present(payload, 'roleName', 'role', 'authority', 'designation', 'roleCode') or ''
+    role_value = _first_present(payload, 'roleName', 'role', 'authority', 'designation') or ''
     permissions = _payload_values(payload, 'permissions', 'permissionCodes', 'authorities')
     modules = _payload_values(payload, 'modules', 'moduleCodes', 'enabledModules')
-    user_tenant = str(_first_present(payload, 'tenantCode', 'tenantId', 'tenant_id', 'companyId', 'organizationId') or tenant_id)
+    user_tenant = str(_first_present(payload, 'tenantCode', 'tenantId', 'tenant_id', 'companyId') or tenant_id)
     full_name = _first_present(payload, 'fullName', 'full_name', 'name', 'displayName')
     first_name = _first_present(payload, 'firstName', 'first_name') or ''
     last_name = _first_present(payload, 'lastName', 'last_name') or ''
     if not full_name:
         full_name = f'{first_name} {last_name}'.strip() or email
-    elif not first_name and not last_name:
-        name_parts = str(full_name).strip().split(None, 1)
-        first_name = name_parts[0] if name_parts else ''
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-
-    active_value = payload.get('isActive', payload.get('active', payload.get('enabled', True)))
-    status_value = str(payload.get('status', '')).strip().lower()
-    is_active = active_value is not False and str(active_value).strip().lower() not in {'false', '0', 'inactive', 'disabled'}
-    if status_value in {'inactive', 'disabled', 'deleted', 'blocked'}:
-        is_active = False
 
     return {
         'external_id': str(external_id or email),
@@ -137,7 +125,7 @@ def _normalize_external_user(payload, tenant_id):
         'permissions': permissions,
         'modules': modules,
         'tenant_id': user_tenant,
-        'is_active': is_active,
+        'is_active': payload.get('isActive', payload.get('active', True)) is not False,
     }
 
 
@@ -640,19 +628,22 @@ class LeadUsersListView(APIView):
         if not _has_any_perm(request.user, 'view_leads', 'create_lead', 'assign_lead', 'create_followup'):
             return _denied()
         tenant_id = getattr(request.user, 'tenant_id', None) or _tenant_id(request.user)
-        auth_token = request.auth
-        java_token = getattr(request.user, '_java_token', None) or (str(auth_token) if auth_token else '')
+        java_token = getattr(request.user, '_java_token', None)
         external_users = list_users(java_token) if java_token else []
-        assignable_users = []
+        counselors = []
         seen_emails = set()
 
         for payload in external_users:
             user_data = _normalize_external_user(payload, tenant_id)
             if not user_data or not user_data['is_active']:
                 continue
+            if tenant_id and user_data['tenant_id'] != str(tenant_id):
+                continue
+            if not _is_counselor_payload(user_data):
+                continue
             user = _sync_external_user(user_data)
             seen_emails.add(user.email.lower())
-            assignable_users.append({
+            counselors.append({
                 'id': user.id,
                 'external_id': user_data['external_id'],
                 'full_name': user_data['full_name'],
@@ -661,22 +652,34 @@ class LeadUsersListView(APIView):
                 'source': 'java',
             })
 
-        if not external_users:
-            users = User.objects.filter(is_active=True)
-            assignable_users.extend([
-                {
-                    'id': user.id,
-                    'external_id': None,
-                    'full_name': user.get_full_name() or user.username,
-                    'email': user.email,
-                    'role': user.role,
-                    'source': 'local-fallback',
-                }
-                for user in users
-                if user.email.lower() not in seen_emails
-            ])
-        assignable_users.sort(key=lambda item: (item.get('full_name') or item.get('email') or '').lower())
-        return Response(assignable_users)
+        if counselors:
+            return Response(counselors)
+
+        users = User.objects.filter(is_active=True)
+        if tenant_id:
+            users = users.filter(tenant_id=tenant_id)
+        users = [
+            user for user in users
+            if (
+                user.email.lower() not in seen_emails
+                and (
+                    user.role == 'counselor'
+                    or user.has_perm_code('create_followup')
+                    or user.has_perm_code('edit_lead')
+                )
+            )
+        ]
+        return Response([
+            {
+                'id': user.id,
+                'external_id': None,
+                'full_name': user.get_full_name() or user.username,
+                'email': user.email,
+                'role': user.role,
+                'source': 'local-fallback',
+            }
+            for user in users
+        ])
 
 
 class RevenueOverviewView(APIView):

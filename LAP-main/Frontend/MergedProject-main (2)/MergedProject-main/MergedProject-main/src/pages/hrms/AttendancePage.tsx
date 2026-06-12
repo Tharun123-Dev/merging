@@ -18,7 +18,6 @@ const STATUS_COLOR: Record<string, { bg: string; color: string; label: string; t
   half_day: { bg: 'bg-amber-500/10 border-amber-500/30 text-amber-500', color: 'text-amber-500', label: 'H', title: 'Half Day' },
   absent: { bg: 'bg-red-500/10 border-red-500/30 text-red-500', color: 'text-red-500', label: 'A', title: 'Absent / LOP' },
   pending: { bg: 'bg-orange-500/10 border-orange-500/30 text-orange-500', color: 'text-orange-500', label: 'PEN', title: 'Pending Correction' },
-  missing: { bg: 'bg-slate-500/10 border-slate-500/30 text-slate-500', color: 'text-slate-500', label: 'M', title: 'Missing Punch' },
   leave: { bg: 'bg-purple-500/10 border-purple-500/30 text-purple-500', color: 'text-purple-500', label: 'LV', title: 'On Leave' },
   lop_leave: { bg: 'bg-rose-500/10 border-rose-500/30 text-rose-500', color: 'text-rose-500', label: 'LOP', title: 'LOP Leave' },
   holiday: { bg: 'bg-blue-500/10 border-blue-500/30 text-blue-500', color: 'text-blue-500', label: 'PH', title: 'Public Holiday' },
@@ -58,12 +57,6 @@ function formatLocation(latitude: number | string | null | undefined, longitude:
   const lon = parseCoordinate(longitude);
   if (lat === null || lon === null) return null;
   return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-}
-
-function formatShiftLabel(shiftType?: string | null) {
-  if (shiftType === 'night') return 'Night shift';
-  if (shiftType === 'day') return 'Day shift';
-  return 'Attendance';
 }
 
 function normalizeAttendanceRecord<T extends AttendanceRecord | null | undefined>(record: T): T {
@@ -129,10 +122,6 @@ export function AttendancePage() {
 
   // Forms
   const [officeForm, setOfficeForm] = useState({ name: '', latitude: '', longitude: '', radius_meters: '300' });
-  const currentAttendance = todayData?.record || null;
-  const currentEmployeeLabel = currentAttendance?.employee_name || 'My attendance';
-  const currentEmployeeCode = currentAttendance?.emp_code || null;
-  const currentShiftLabel = formatShiftLabel(currentAttendance?.shift_type);
   const [regularizeForm, setRegularizeForm] = useState({ date: '', check_in: '', check_out: '', reason: '' });
   const [showRegModal, setShowRegModal] = useState(false);
 
@@ -262,6 +251,16 @@ export function AttendancePage() {
     }
   };
 
+  useEffect(() => {
+    loadData();
+  }, [month, year, approvalsFilter]);
+
+  useEffect(() => {
+    if (office && !isWfh) {
+      fetchGps();
+    }
+  }, [office, isWfh]);
+
   const gpsDistance = useMemo(() => {
     if (!gps || !office) return null;
     return haversineMetres(gps.latitude, gps.longitude, Number(office.latitude), Number(office.longitude));
@@ -286,11 +285,7 @@ export function AttendancePage() {
           return;
         }
       }
-<<<<<<< HEAD
-      await attendanceService.checkIn(isWfh, currentGps?.latitude ?? null, currentGps?.longitude ?? null);
-=======
       await attendanceService.checkIn(isWfh, currentGps?.latitude || null, currentGps?.longitude || null);
->>>>>>> 6c736b9 (updated)
       toast.success('Successfully checked in!');
       await loadData(true);
     } catch (err) {
@@ -304,13 +299,6 @@ export function AttendancePage() {
   const handleCheckOut = async () => {
     try {
       setSubmitting(true);
-<<<<<<< HEAD
-      if (!todayData?.record?.check_in || todayData?.record?.check_out) {
-        toast.error('No open check-in found. Please check in first or refresh the page.');
-        return;
-      }
-=======
->>>>>>> 6c736b9 (updated)
       const currentGps = await getFreshGps();
       if (!isWfh && office) {
         if (!currentGps) return;
@@ -320,11 +308,7 @@ export function AttendancePage() {
           return;
         }
       }
-<<<<<<< HEAD
-      const res = await attendanceService.checkOut(currentGps?.latitude ?? null, currentGps?.longitude ?? null);
-=======
       const res = await attendanceService.checkOut(currentGps?.latitude || null, currentGps?.longitude || null);
->>>>>>> 6c736b9 (updated)
       toast.success(`Checked out! Total hours: ${res.data.hours_worked || 0}h`);
       await loadData(true);
     } catch (err) {
@@ -473,10 +457,6 @@ export function AttendancePage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [month, year, approvalsFilter]);
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -489,14 +469,6 @@ export function AttendancePage() {
           </Button>
         }
       />
-
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-        <span className="rounded-full border bg-muted/40 px-3 py-1 font-semibold text-foreground">{currentEmployeeLabel}</span>
-        {currentEmployeeCode && <span className="rounded-full border bg-muted/20 px-3 py-1 font-mono">{currentEmployeeCode}</span>}
-        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-semibold text-primary">
-          {currentShiftLabel}
-        </span>
-      </div>
 
       {/* Tabs */}
       <div className="flex p-1 bg-muted rounded-xl w-fit border border-border">
@@ -857,11 +829,8 @@ export function AttendancePage() {
                   </div>
                 </div>
                 {attendancePolicy && (
-                  <div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-[10px] text-muted-foreground sm:grid-cols-5">
+                  <div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-[10px] text-muted-foreground sm:grid-cols-4">
                     <span>Shift: <b className="text-foreground">{attendancePolicy.shift_start} - {attendancePolicy.shift_end}</b></span>
-                    {attendancePolicy.night_shift_enabled && (
-                      <span>Night: <b className="text-foreground">{attendancePolicy.night_shift_start} - {attendancePolicy.night_shift_end}</b></span>
-                    )}
                     <span>Grace: <b className="text-foreground">{attendancePolicy.grace_minutes} min</b></span>
                     <span>Half day below: <b className="text-foreground">{attendancePolicy.half_day_hours}h</b></span>
                     <span>Weekends: <b className="text-foreground">{attendancePolicy.weekend_days?.join(', ') || 'none'}</b></span>
@@ -897,11 +866,8 @@ export function AttendancePage() {
                       const cellToday = dateString === new Date().toISOString().split('T')[0];
 
                       let statusKey = record?.status;
-                      if (record && !record.check_out && !['leave', 'lop_leave', 'holiday'].includes(record.status) && dateString !== new Date().toISOString().split('T')[0]) {
-                        statusKey = 'missing';
-                      }
-                      if (record?.pending_reason === 'missing_attendance' || record?.pending_reason === 'missing_checkout') {
-                        statusKey = 'missing';
+                      if (record && !record.check_out && dateString !== new Date().toISOString().split('T')[0]) {
+                        statusKey = 'half_day';
                       }
 
                       let displayColor = STATUS_COLOR.weekend;
@@ -911,7 +877,7 @@ export function AttendancePage() {
                         displayColor = STATUS_COLOR.holiday;
                       }
 
-                      const hasOT = record && record.check_in && record.check_out && record.ot_hours > 0;
+                      const hasOT = record && record.ot_hours > 0;
                       const checkInFormatted = record?.check_in ? formatTime(record.check_in) : null;
                       const checkOutFormatted = record?.check_out ? formatTime(record.check_out) : null;
 
@@ -944,24 +910,17 @@ export function AttendancePage() {
 
                           {/* Detail information inside cell */}
                           <div className="mt-1 space-y-0.5">
-                            <div className="flex flex-wrap items-center gap-1">
-                              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-emerald-600">
-                                In
-                              </span>
-                              <p className="text-[9px] text-foreground font-medium">{checkInFormatted || '--:--'}</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-1">
-                              <span className="rounded-full border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-rose-600">
-                                Out
-                              </span>
-                              <p className="text-[9px] text-foreground font-medium">{checkOutFormatted || '--:--'}</p>
-                            </div>
+                            {checkInFormatted && (
+                              <p className="text-[9px] text-foreground font-medium">
+                                {checkInFormatted} → {checkOutFormatted || '?'}
+                              </p>
+                            )}
                             {hasOT && (
                               <p className="text-[8px] text-purple-500 font-bold">
                                 OT +{record?.ot_hours}h
                               </p>
                             )}
-                            {statusKey === 'late' && (
+                            {record?.status === 'late' && (
                               <p className="text-[8px] text-yellow-500 font-semibold">Late entry</p>
                             )}
                             {holidayName && (
