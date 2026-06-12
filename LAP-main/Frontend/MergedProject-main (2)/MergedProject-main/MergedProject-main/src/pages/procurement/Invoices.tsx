@@ -278,7 +278,7 @@ export default function Invoices() {
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      link.parentNode?.removeChild(link);
     } catch (error) {
       console.error("Error downloading receipt", error);
       alert("Failed to download receipt. Please check permissions.");

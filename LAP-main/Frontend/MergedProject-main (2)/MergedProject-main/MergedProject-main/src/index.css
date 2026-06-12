@@ -142,51 +142,13 @@
 
 @layer components {
   .crm-workspace {
-<<<<<<< HEAD
-    position: relative;
-    isolation: isolate;
     color: var(--color-foreground);
-    padding: 0.25rem;
-  }
-
-  .crm-workspace::before {
-    content: '';
-    position: absolute;
-    inset: -1.25rem -0.75rem auto;
-    height: 12rem;
-    background:
-      radial-gradient(circle at top left, color-mix(in oklch, var(--color-primary) 16%, transparent), transparent 60%),
-      radial-gradient(circle at top right, color-mix(in oklch, var(--color-accent) 14%, transparent), transparent 55%);
-    opacity: 0.9;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .crm-workspace > * {
-    position: relative;
-    z-index: 1;
-=======
-    color: var(--color-foreground);
->>>>>>> 6c736b9 (updated)
   }
 
   .crm-workspace .rounded-3xl,
   .crm-workspace .rounded-2xl,
   .crm-workspace .rounded-xl {
-<<<<<<< HEAD
-    border-radius: var(--radius-lg);
-  }
-
-  .crm-workspace .rounded-xl.border.bg-card,
-  .crm-workspace .rounded-2xl.border.bg-card,
-  .crm-workspace .rounded-3xl.border.bg-card {
-    border-color: color-mix(in oklch, var(--color-border) 88%, var(--color-primary) 12%);
-    box-shadow:
-      0 1px 2px color-mix(in srgb, black 6%, transparent),
-      0 12px 36px color-mix(in srgb, black 8%, transparent);
-=======
     border-radius: var(--radius-md);
->>>>>>> 6c736b9 (updated)
   }
 
   .crm-workspace input,
@@ -213,18 +175,7 @@
     vertical-align: middle;
   }
 
-<<<<<<< HEAD
-  .crm-workspace thead th {
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
 
-  .crm-workspace tbody tr:last-child td {
-    border-bottom-width: 0;
-  }
-
-=======
->>>>>>> 6c736b9 (updated)
   .crm-workspace .custom-scrollbar,
   .crm-workspace [class*="overflow-x"] {
     scrollbar-width: thin;
