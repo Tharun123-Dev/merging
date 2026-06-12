@@ -1,6 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, Plus, Edit2, Eye, Trash2, ShieldCheck, AlertCircle } from 'lucide-react';
@@ -73,14 +70,15 @@ export default function Vendors() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('Overview');
   const itemsPerPage = 5;
-  
+
   const [filters, setFilters] = useState<{ status: string[]; risk: string[] }>({ status: [], risk: [] });
-  
-  const [newVendor, setNewVendor] = useState<NewVendorState>({ 
-    vendorName: '', companyName: '', categoryId: '', contactPerson: '', 
-    email: '', mobileNumber: '', alternateMobileNumber: '', 
-    gstNumber: '', panNumber: '', address: '', city: '', state: '', 
+
+  const [newVendor, setNewVendor] = useState<NewVendorState>({
+    vendorName: '', companyName: '', categoryId: '', contactPerson: '',
+    email: '', mobileNumber: '', alternateMobileNumber: '',
+    gstNumber: '', panNumber: '', address: '', city: '', state: '',
     country: '', postalCode: '', rating: ''
   });
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -109,14 +107,14 @@ export default function Vendors() {
       if (searchQuery) params.searchTerm = searchQuery;
 
       const response = await rolesApi.get(endpoint, { params });
-      
+
       if (response.data && response.data.data) {
         let fetchedVendors = response.data.data.content.map((v: any) => ({
           id: v.id,
           vendorCode: v.vendorCode,
           name: v.vendorName,
           categoryId: v.categoryId,
-          categoryName: v.categoryName || 'N/A', 
+          categoryName: v.categoryName || 'N/A',
           companyName: v.companyName,
           gstNumber: v.gstNumber,
           panNumber: v.panNumber,
@@ -130,7 +128,7 @@ export default function Vendors() {
           email: v.email,
           phone: v.mobileNumber,
           status: v.status || (v.active ? 'Active' : 'Inactive'),
-          risk: v.risk || 'Low', 
+          risk: v.risk || 'Low',
           rating: v.rating || 'N/A',
         }));
 
@@ -163,7 +161,7 @@ export default function Vendors() {
   const toggleFilter = (type: 'status' | 'risk', value: string) => {
     setFilters(prev => ({
       ...prev,
-      [type]: prev[type].includes(value) 
+      [type]: prev[type].includes(value)
         ? prev[type].filter(item => item !== value)
         : [...prev[type], value]
     }));
@@ -175,10 +173,10 @@ export default function Vendors() {
   };
 
   const resetForm = () => {
-    setNewVendor({ 
-      vendorName: '', companyName: '', categoryId: '', contactPerson: '', 
-      email: '', mobileNumber: '', alternateMobileNumber: '', 
-      gstNumber: '', panNumber: '', address: '', city: '', state: '', 
+    setNewVendor({
+      vendorName: '', companyName: '', categoryId: '', contactPerson: '',
+      email: '', mobileNumber: '', alternateMobileNumber: '',
+      gstNumber: '', panNumber: '', address: '', city: '', state: '',
       country: '', postalCode: '', rating: ''
     });
   };
@@ -341,6 +339,7 @@ export default function Vendors() {
 
   const openViewModal = (vendor: Vendor) => {
     setSelectedVendor(vendor);
+    setActiveTab('Overview');
     setIsViewModalOpen(true);
   };
 
@@ -359,13 +358,13 @@ export default function Vendors() {
           <h2 className="text-2xl font-bold text-foreground">Vendor Directory</h2>
           <p className="text-muted-foreground text-sm mt-1">Manage and evaluate your vendor network</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search vendors..." 
+            <input
+              type="text"
+              placeholder="Search vendors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-field pl-10 w-full"
@@ -424,10 +423,9 @@ export default function Vendors() {
                         <div className="text-xs text-muted-foreground">{vendor.email}</div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                          vendor.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 
-                          vendor.status === 'Under Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${vendor.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
+                            vendor.status === 'Under Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-600 dark:text-rose-400 border-rose-500/20'
+                          }`}>
                           {vendor.status}
                         </span>
                       </td>
@@ -471,35 +469,34 @@ export default function Vendors() {
             </table>
           </div>
         )}
-        
+
         <div className="p-4 border-t border-border flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground gap-4">
           <span>
             Showing {totalEntries === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalEntries)} of {totalEntries} entries
           </span>
           <div className="flex gap-1 flex-wrap justify-center">
-            <button 
+            <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="px-3 py-1 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Prev
             </button>
-            
+
             {[...Array(totalPages)].map((_, i) => (
-              <button 
+              <button
                 key={i + 1}
                 onClick={() => setCurrentPage(i + 1)}
-                className={`px-3 py-1 rounded border transition-colors ${
-                  currentPage === i + 1 
-                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 font-semibold' 
+                className={`px-3 py-1 rounded border transition-colors ${currentPage === i + 1
+                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-600 dark:text-cyan-400 border-cyan-500/20 font-semibold'
                     : 'border-border hover:bg-muted'
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>
             ))}
-            
-            <button 
+
+            <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="px-3 py-1 rounded border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -515,11 +512,11 @@ export default function Vendors() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Company Name *</label>
-              <input type="text" className="input-field w-full" required placeholder="e.g. Acme Corp" value={newVendor.vendorName} onChange={(e) => setNewVendor({...newVendor, vendorName: e.target.value})} />
+              <input type="text" className="input-field w-full" required placeholder="e.g. Acme Corp" value={newVendor.vendorName} onChange={(e) => setNewVendor({ ...newVendor, vendorName: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Category</label>
-              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.categoryId || ''} onChange={(e) => setNewVendor({...newVendor, categoryId: e.target.value})}>
+              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.categoryId || ''} onChange={(e) => setNewVendor({ ...newVendor, categoryId: e.target.value })}>
                 <option value="" className="bg-background text-foreground">Select a category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id} className="bg-background text-foreground">{cat.name}</option>
@@ -529,61 +526,61 @@ export default function Vendors() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Legal Company Name</label>
-            <input type="text" className="input-field w-full" placeholder="e.g. Acme Corp Pvt Ltd" value={newVendor.companyName} onChange={(e) => setNewVendor({...newVendor, companyName: e.target.value})} />
+            <input type="text" className="input-field w-full" placeholder="e.g. Acme Corp Pvt Ltd" value={newVendor.companyName} onChange={(e) => setNewVendor({ ...newVendor, companyName: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Person</label>
-            <input type="text" className="input-field w-full" placeholder="Full Name" value={newVendor.contactPerson} onChange={(e) => setNewVendor({...newVendor, contactPerson: e.target.value})} />
+            <input type="text" className="input-field w-full" placeholder="Full Name" value={newVendor.contactPerson} onChange={(e) => setNewVendor({ ...newVendor, contactPerson: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address *</label>
-              <input type="email" className="input-field w-full" required placeholder="email@company.com" value={newVendor.email} onChange={(e) => setNewVendor({...newVendor, email: e.target.value})} />
+              <input type="email" className="input-field w-full" required placeholder="email@company.com" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Mobile Number *</label>
-              <input type="tel" className="input-field w-full" required placeholder="+1 (555) 000-0000" value={newVendor.mobileNumber} onChange={(e) => setNewVendor({...newVendor, mobileNumber: e.target.value})} />
+              <input type="tel" className="input-field w-full" required placeholder="+1 (555) 000-0000" value={newVendor.mobileNumber} onChange={(e) => setNewVendor({ ...newVendor, mobileNumber: e.target.value })} />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Alt. Mobile</label>
-            <input type="tel" className="input-field w-full" placeholder="+1 (555) 000-0000" value={newVendor.alternateMobileNumber} onChange={(e) => setNewVendor({...newVendor, alternateMobileNumber: e.target.value})} />
+            <input type="tel" className="input-field w-full" placeholder="+1 (555) 000-0000" value={newVendor.alternateMobileNumber} onChange={(e) => setNewVendor({ ...newVendor, alternateMobileNumber: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">GST Number</label>
-              <input type="text" className="input-field w-full" placeholder="GSTIN..." value={newVendor.gstNumber} onChange={(e) => setNewVendor({...newVendor, gstNumber: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="GSTIN..." value={newVendor.gstNumber} onChange={(e) => setNewVendor({ ...newVendor, gstNumber: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">PAN Number</label>
-              <input type="text" className="input-field w-full" placeholder="PAN..." value={newVendor.panNumber} onChange={(e) => setNewVendor({...newVendor, panNumber: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="PAN..." value={newVendor.panNumber} onChange={(e) => setNewVendor({ ...newVendor, panNumber: e.target.value })} />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Address</label>
-            <input type="text" className="input-field w-full" placeholder="123 Street Name" value={newVendor.address} onChange={(e) => setNewVendor({...newVendor, address: e.target.value})} />
+            <input type="text" className="input-field w-full" placeholder="123 Street Name" value={newVendor.address} onChange={(e) => setNewVendor({ ...newVendor, address: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">City</label>
-              <input type="text" className="input-field w-full" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({...newVendor, city: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({ ...newVendor, city: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">State</label>
-              <input type="text" className="input-field w-full" placeholder="State" value={newVendor.state} onChange={(e) => setNewVendor({...newVendor, state: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="State" value={newVendor.state} onChange={(e) => setNewVendor({ ...newVendor, state: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Country</label>
-              <input type="text" className="input-field w-full" placeholder="Country" value={newVendor.country} onChange={(e) => setNewVendor({...newVendor, country: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="Country" value={newVendor.country} onChange={(e) => setNewVendor({ ...newVendor, country: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Postal Code</label>
-              <input type="text" className="input-field w-full" placeholder="Zip/Pin" value={newVendor.postalCode} onChange={(e) => setNewVendor({...newVendor, postalCode: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="Zip/Pin" value={newVendor.postalCode} onChange={(e) => setNewVendor({ ...newVendor, postalCode: e.target.value })} />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Initial Rating (Optional)</label>
-            <input type="number" step="0.1" min="0" max="5" className="input-field w-full" placeholder="0.0 - 5.0" value={newVendor.rating} onChange={(e) => setNewVendor({...newVendor, rating: e.target.value})} />
+            <input type="number" step="0.1" min="0" max="5" className="input-field w-full" placeholder="0.0 - 5.0" value={newVendor.rating} onChange={(e) => setNewVendor({ ...newVendor, rating: e.target.value })} />
           </div>
           <div className="pt-4 flex justify-end gap-3 border-t border-border">
             <button type="button" onClick={() => setIsAddVendorOpen(false)} className="btn-secondary">Cancel</button>
@@ -597,11 +594,11 @@ export default function Vendors() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Company Name *</label>
-              <input type="text" className="input-field w-full" required placeholder="e.g. Acme Corp" value={newVendor.vendorName} onChange={(e) => setNewVendor({...newVendor, vendorName: e.target.value})} />
+              <input type="text" className="input-field w-full" required placeholder="e.g. Acme Corp" value={newVendor.vendorName} onChange={(e) => setNewVendor({ ...newVendor, vendorName: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Category</label>
-              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.categoryId || ''} onChange={(e) => setNewVendor({...newVendor, categoryId: e.target.value})}>
+              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.categoryId || ''} onChange={(e) => setNewVendor({ ...newVendor, categoryId: e.target.value })}>
                 <option value="" className="bg-background text-foreground">Select a category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id} className="bg-background text-foreground">{cat.name}</option>
@@ -611,68 +608,68 @@ export default function Vendors() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Legal Company Name</label>
-            <input type="text" className="input-field w-full" placeholder="Full Legal Entity Name" value={newVendor.companyName} onChange={(e) => setNewVendor({...newVendor, companyName: e.target.value})} />
+            <input type="text" className="input-field w-full" placeholder="Full Legal Entity Name" value={newVendor.companyName} onChange={(e) => setNewVendor({ ...newVendor, companyName: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Person</label>
-              <input type="text" className="input-field w-full" placeholder="Full Name" value={newVendor.contactPerson} onChange={(e) => setNewVendor({...newVendor, contactPerson: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="Full Name" value={newVendor.contactPerson} onChange={(e) => setNewVendor({ ...newVendor, contactPerson: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address *</label>
-              <input type="email" className="input-field w-full" required placeholder="email@company.com" value={newVendor.email} onChange={(e) => setNewVendor({...newVendor, email: e.target.value})} />
+              <input type="email" className="input-field w-full" required placeholder="email@company.com" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Mobile Number *</label>
-              <input type="tel" className="input-field w-full" required placeholder="+1 (555) 000-0000" value={newVendor.mobileNumber} onChange={(e) => setNewVendor({...newVendor, mobileNumber: e.target.value})} />
+              <input type="tel" className="input-field w-full" required placeholder="+1 (555) 000-0000" value={newVendor.mobileNumber} onChange={(e) => setNewVendor({ ...newVendor, mobileNumber: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Alternate Number</label>
-              <input type="tel" className="input-field w-full" placeholder="+1 (555) 000-0000" value={newVendor.alternateMobileNumber} onChange={(e) => setNewVendor({...newVendor, alternateMobileNumber: e.target.value})} />
+              <input type="tel" className="input-field w-full" placeholder="+1 (555) 000-0000" value={newVendor.alternateMobileNumber} onChange={(e) => setNewVendor({ ...newVendor, alternateMobileNumber: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">GST Number</label>
-              <input type="text" className="input-field w-full" placeholder="GSTIN" value={newVendor.gstNumber} onChange={(e) => setNewVendor({...newVendor, gstNumber: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="GSTIN" value={newVendor.gstNumber} onChange={(e) => setNewVendor({ ...newVendor, gstNumber: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">PAN Number</label>
-              <input type="text" className="input-field w-full" placeholder="PAN" value={newVendor.panNumber} onChange={(e) => setNewVendor({...newVendor, panNumber: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="PAN" value={newVendor.panNumber} onChange={(e) => setNewVendor({ ...newVendor, panNumber: e.target.value })} />
             </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Address</label>
-            <input type="text" className="input-field w-full" placeholder="Street Address" value={newVendor.address} onChange={(e) => setNewVendor({...newVendor, address: e.target.value})} />
+            <input type="text" className="input-field w-full" placeholder="Street Address" value={newVendor.address} onChange={(e) => setNewVendor({ ...newVendor, address: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">City</label>
-              <input type="text" className="input-field w-full" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({...newVendor, city: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({ ...newVendor, city: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">State</label>
-              <input type="text" className="input-field w-full" placeholder="State" value={newVendor.state} onChange={(e) => setNewVendor({...newVendor, state: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="State" value={newVendor.state} onChange={(e) => setNewVendor({ ...newVendor, state: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Country</label>
-              <input type="text" className="input-field w-full" placeholder="Country" value={newVendor.country} onChange={(e) => setNewVendor({...newVendor, country: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="Country" value={newVendor.country} onChange={(e) => setNewVendor({ ...newVendor, country: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Postal Code</label>
-              <input type="text" className="input-field w-full" placeholder="Zip/Pin" value={newVendor.postalCode} onChange={(e) => setNewVendor({...newVendor, postalCode: e.target.value})} />
+              <input type="text" className="input-field w-full" placeholder="Zip/Pin" value={newVendor.postalCode} onChange={(e) => setNewVendor({ ...newVendor, postalCode: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Rating</label>
-              <input type="number" step="0.1" min="0" max="5" className="input-field w-full" placeholder="0.0 - 5.0" value={newVendor.rating || ''} onChange={(e) => setNewVendor({...newVendor, rating: e.target.value})} />
+              <input type="number" step="0.1" min="0" max="5" className="input-field w-full" placeholder="0.0 - 5.0" value={newVendor.rating || ''} onChange={(e) => setNewVendor({ ...newVendor, rating: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
-              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.status} onChange={(e) => setNewVendor({...newVendor, status: e.target.value})}>
+              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.status} onChange={(e) => setNewVendor({ ...newVendor, status: e.target.value })}>
                 <option value="Active" className="bg-background text-foreground">Active</option>
                 <option value="Under Review" className="bg-background text-foreground">Under Review</option>
                 <option value="Inactive" className="bg-background text-foreground">Inactive</option>
@@ -680,7 +677,7 @@ export default function Vendors() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Risk Level</label>
-              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.risk} onChange={(e) => setNewVendor({...newVendor, risk: e.target.value})}>
+              <select className="input-field w-full bg-background text-foreground border-border" value={newVendor.risk} onChange={(e) => setNewVendor({ ...newVendor, risk: e.target.value })}>
                 <option value="Low" className="bg-background text-foreground">Low</option>
                 <option value="Medium" className="bg-background text-foreground">Medium</option>
                 <option value="High" className="bg-background text-foreground">High</option>
@@ -707,68 +704,89 @@ export default function Vendors() {
                 <p className="text-sm text-cyan-600 dark:text-cyan-400 font-mono mt-0.5">{selectedVendor.vendorCode}</p>
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs">
-              <div>
-                <p className="text-muted-foreground mb-1">Category</p>
-                <p className="text-foreground font-medium">{selectedVendor.categoryName}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Company Name</p>
-                <p className="text-foreground font-medium">{selectedVendor.companyName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Contact Person</p>
-                <p className="text-foreground font-medium">{selectedVendor.contact}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">GST Number</p>
-                <p className="text-foreground">{selectedVendor.gstNumber || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">PAN Number</p>
-                <p className="text-foreground">{selectedVendor.panNumber || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Address</p>
-                <p className="text-foreground">{[selectedVendor.address, selectedVendor.city, selectedVendor.state, selectedVendor.country].filter(Boolean).join(', ') || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Email Address</p>
-                <p className="text-foreground font-medium">{selectedVendor.email}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Rating</p>
-                <div className="flex items-center">
-                  {selectedVendor.rating !== 'N/A' ? (
-                    <>
-                      <span className="font-semibold text-foreground mr-1">{selectedVendor.rating}</span>
-                      <span className="text-amber-500">★</span>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">N/A</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Status</p>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                  selectedVendor.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 
-                  selectedVendor.status === 'Under Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                }`}>
-                  {selectedVendor.status}
-                </span>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Risk Level</p>
-                <div className="flex items-center">
-                  {selectedVendor.risk === 'Low' && <ShieldCheck size={16} className="text-emerald-500 mr-2" />}
-                  {selectedVendor.risk === 'Medium' && <AlertCircle size={16} className="text-amber-500 mr-2" />}
-                  {selectedVendor.risk === 'High' && <AlertCircle size={16} className="text-rose-500 mr-2" />}
-                  <span className="text-foreground font-medium">{selectedVendor.risk}</span>
-                </div>
-              </div>
+
+            <div className="flex border-b border-border mt-4 mb-4 gap-4">
+              {['Overview', 'Contracts', 'Invoices'].map(tab => (
+                <button
+                  key={tab}
+                  className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  onClick={(e) => { e.preventDefault(); setActiveTab(tab); }}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
+
+            {activeTab === 'Overview' && (
+              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs">
+                <div>
+                  <p className="text-muted-foreground mb-1">Category</p>
+                  <p className="text-foreground font-medium">{selectedVendor.categoryName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Company Name</p>
+                  <p className="text-foreground font-medium">{selectedVendor.companyName || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Contact Person</p>
+                  <p className="text-foreground font-medium">{selectedVendor.contact}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">GST Number</p>
+                  <p className="text-foreground">{selectedVendor.gstNumber || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">PAN Number</p>
+                  <p className="text-foreground">{selectedVendor.panNumber || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Address</p>
+                  <p className="text-foreground">{[selectedVendor.address, selectedVendor.city, selectedVendor.state, selectedVendor.country].filter(Boolean).join(', ') || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Email Address</p>
+                  <p className="text-foreground font-medium">{selectedVendor.email}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Rating</p>
+                  <div className="flex items-center">
+                    {selectedVendor.rating !== 'N/A' ? (
+                      <>
+                        <span className="font-semibold text-foreground mr-1">{selectedVendor.rating}</span>
+                        <span className="text-amber-500">★</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Status</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${selectedVendor.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
+                      selectedVendor.status === 'Under Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                    }`}>
+                    {selectedVendor.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-1">Risk Level</p>
+                  <div className="flex items-center">
+                    {selectedVendor.risk === 'Low' && <ShieldCheck size={16} className="text-emerald-500 mr-2" />}
+                    {selectedVendor.risk === 'Medium' && <AlertCircle size={16} className="text-amber-500 mr-2" />}
+                    {selectedVendor.risk === 'High' && <AlertCircle size={16} className="text-rose-500 mr-2" />}
+                    <span className="text-foreground font-medium">{selectedVendor.risk}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(activeTab === 'Contracts' || activeTab === 'Invoices') && (
+              <div className="bg-muted/20 rounded-lg p-6 text-center border border-border min-h-[200px] flex flex-col items-center justify-center">
+                <p className="text-muted-foreground text-sm">No {activeTab.toLowerCase()} found.</p>
+              </div>
+            )}
+
             <div className="pt-4 flex justify-end border-t border-border">
               <button onClick={() => setIsViewModalOpen(false)} className="btn-secondary">Close</button>
             </div>
@@ -787,17 +805,17 @@ export default function Vendors() {
                     <li key={cat.id} className="text-foreground text-xs p-2 hover:bg-muted/50 rounded flex justify-between items-center">
                       <span className="font-medium">{cat.name}</span>
                       <div className="flex items-center gap-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-medium ${cat.active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20'}`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-medium ${cat.active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 dark:text-muted-foreground border border-slate-500/20'}`}>
                           {cat.active ? 'Active' : 'Inactive'}
                         </span>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => handleToggleCategoryStatus(cat)} className="text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors" title={cat.active ? "Deactivate" : "Activate"}>
+                          <button type="button" onClick={() => handleToggleCategoryStatus(cat)} className="text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-600 dark:text-cyan-400 transition-colors" title={cat.active ? "Deactivate" : "Activate"}>
                             <ShieldCheck size={14} />
                           </button>
                           <button type="button" onClick={() => handleEditCategoryName(cat)} className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit Name">
                             <Edit2 size={14} />
                           </button>
-                          <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 transition-colors" title="Delete Category">
+                          <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="text-muted-foreground hover:text-rose-600 dark:hover:text-rose-600 dark:text-rose-400 transition-colors" title="Delete Category">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -810,18 +828,18 @@ export default function Vendors() {
               )}
             </div>
           </div>
-          
+
           <form className="space-y-4 border-t border-border pt-4" onSubmit={handleAddCategory}>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Add New Category *</label>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  className="input-field w-full bg-background text-foreground border-border flex-1" 
-                  required 
-                  placeholder="e.g. Facilities Management" 
-                  value={newCategoryName} 
-                  onChange={(e) => setNewCategoryName(e.target.value)} 
+                <input
+                  type="text"
+                  className="input-field w-full bg-background text-foreground border-border flex-1"
+                  required
+                  placeholder="e.g. Facilities Management"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
                 />
                 <button type="submit" className="btn-primary whitespace-nowrap px-4 py-2">Add</button>
               </div>
@@ -840,12 +858,12 @@ export default function Vendors() {
             <div className="flex flex-wrap gap-4">
               {['Active', 'Under Review', 'Inactive'].map(status => (
                 <label key={status} className="flex items-center space-x-2 text-foreground cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="rounded border-border bg-background text-cyan-600 dark:text-cyan-500 focus:ring-cyan-500" 
+                  <input
+                    type="checkbox"
+                    className="rounded border-border bg-background text-cyan-600 dark:text-cyan-500 focus:ring-cyan-500"
                     checked={filters.status.includes(status)}
                     onChange={() => toggleFilter('status', status)}
-                  /> 
+                  />
                   <span>{status}</span>
                 </label>
               ))}
@@ -856,12 +874,12 @@ export default function Vendors() {
             <div className="flex flex-wrap gap-4">
               {['Low', 'Medium', 'High'].map(risk => (
                 <label key={risk} className="flex items-center space-x-2 text-foreground cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="rounded border-border bg-background text-cyan-600 dark:text-cyan-500 focus:ring-cyan-500" 
+                  <input
+                    type="checkbox"
+                    className="rounded border-border bg-background text-cyan-600 dark:text-cyan-500 focus:ring-cyan-500"
                     checked={filters.risk.includes(risk)}
                     onChange={() => toggleFilter('risk', risk)}
-                  /> 
+                  />
                   <span>{risk}</span>
                 </label>
               ))}
