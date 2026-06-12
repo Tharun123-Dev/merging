@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (newToken: string, newPermissions: string[], newModules: string[], newTenantCode?: string, newRole?: string) => {
     let finalPermissions = newPermissions;
     let finalModules = newModules;
-    if (newRole) localStorage.setItem(\'role\', newRole);
+    if (newRole) localStorage.setItem('role', newRole);
       const parsedUser = parseToken(newToken);
     localStorage.setItem('token', newToken);
     localStorage.setItem('permissions', JSON.stringify(finalPermissions));
