@@ -85,6 +85,16 @@ def _base_role(value: Optional[str]) -> str:
 def _is_external_admin(role: Optional[str], claims: dict) -> bool:
     if claims.get('isPlatformAdmin') is True or claims.get('platformAdmin') is True:
         return True
+    tenant_code = str(
+        _first_value(
+            claims.get('tenantCode'),
+            claims.get('tenant_code'),
+            claims.get('tenantId'),
+            claims.get('tenant_id'),
+        ) or ''
+    ).strip().upper()
+    if tenant_code == 'SYS':
+        return True
     return _normalize_role(role) in {
         'super_admin',
         'superadmin',

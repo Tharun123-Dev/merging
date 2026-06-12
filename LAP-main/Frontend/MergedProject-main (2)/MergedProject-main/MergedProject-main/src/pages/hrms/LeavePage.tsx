@@ -959,7 +959,14 @@ function LeaveApprovals() {
     setLoading(true);
     try {
       const r = await leaveService.getAllRequests(filter || undefined);
-      setRequests(r.data || []);
+      let nextRequests = r.data || [];
+
+      if (filter === 'pending' && nextRequests.length === 0) {
+        const myPending = await leaveService.getMyRequests('pending');
+        nextRequests = myPending.data || [];
+      }
+
+      setRequests(nextRequests);
     } catch {
       toast.error('Failed to load leave approvals');
     } finally {
@@ -1805,17 +1812,21 @@ function HolidayRow({ h, onEdit, onDelete, deletingId, isUpcoming = false }: Hol
 // --- CONTAINER PAGE: LeavePage ---
 export function LeavePage() {
   const [activeTab, setActiveTab] = useState('balance');
-  const { role } = usePermissions();
+  const { role, hasAnyPermission } = usePermissions();
 
   // Admin tabs are visible to HR/Admin roles
   const isAdminOrHR = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'HR';
+  const canManageApprovals = isAdminOrHR || hasAnyPermission(['view_all_leave', 'approve_leave']);
+  const canConfigureLeave = isAdminOrHR || hasAnyPermission(['configure_leave']);
 
   const tabs = [
     { key: 'balance', label: 'Balance', icon: Wallet },
     { key: 'apply', label: 'Apply', icon: CalendarCheck },
     { key: 'my', label: 'My Requests', icon: ClipboardList },
-    ...(isAdminOrHR ? [
+    ...(canManageApprovals ? [
       { key: 'approvals', label: 'Approvals', icon: CheckCircle },
+    ] : []),
+    ...(canConfigureLeave ? [
       { key: 'config', label: 'Leave Types', icon: Sliders },
       { key: 'holidays', label: 'Holidays', icon: Calendar },
     ] : []),
@@ -1858,9 +1869,9 @@ export function LeavePage() {
         {activeTab === 'balance' && <BalanceDashboard />}
         {activeTab === 'apply' && <ApplyLeave onApplied={() => setActiveTab('my')} />}
         {activeTab === 'my' && <MyRequests />}
-        {activeTab === 'approvals' && isAdminOrHR && <LeaveApprovals />}
-        {activeTab === 'config' && isAdminOrHR && <LeaveTypeConfig />}
-        {activeTab === 'holidays' && isAdminOrHR && <HolidayConfig />}
+        {activeTab === 'approvals' && canManageApprovals && <LeaveApprovals />}
+        {activeTab === 'config' && canConfigureLeave && <LeaveTypeConfig />}
+        {activeTab === 'holidays' && canConfigureLeave && <HolidayConfig />}
       </div>
     </div>
   );

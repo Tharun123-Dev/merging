@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from django.shortcuts import get_object_or_404
 
-from utils.permissions import make_permission, IsAuthenticatedUser
+from utils.permissions import make_permission, make_any_permission, IsAuthenticatedUser
 from accounts.tenant_utils import get_tenant_id
 from accounts.models import User
 from .models import LeaveType, LeaveBalance, LeaveRequest
@@ -563,7 +563,7 @@ class CancelLeaveView(APIView):
 # ── ALL LEAVE REQUESTS (Manager/HR/Admin) ─────────────────────────────────────
 
 class AllLeaveRequestsView(APIView):
-    permission_classes = [make_permission('view_all_leave')]
+    permission_classes = [make_any_permission('view_all_leave', 'approve_leave')]
 
     def get(self, request):
         status_filter = request.query_params.get('status')

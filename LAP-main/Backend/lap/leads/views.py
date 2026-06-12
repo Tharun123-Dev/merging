@@ -80,6 +80,8 @@ def _tenant_id(user):
 def _first_present(payload, *keys):
     for key in keys:
         value = payload.get(key) if isinstance(payload, dict) else None
+        if isinstance(value, dict):
+            value = _first_present(value, 'name', 'displayName', 'roleName', 'code', 'id')
         if value not in (None, ''):
             return value
     return None
@@ -97,17 +99,17 @@ def _payload_values(payload, *keys):
 
 
 def _normalize_external_user(payload, tenant_id):
-    email = _first_present(payload, 'email', 'username', 'userEmail', 'mail')
-    external_id = _first_present(payload, 'id', 'userId', 'user_id', 'sub')
+    email = _first_present(payload, 'email', 'username', 'userEmail', 'mail', 'emailAddress')
+    external_id = _first_present(payload, 'id', 'userId', 'user_id', 'sub', 'employeeId')
     if not email and external_id:
         email = f'java-user-{external_id}@lap.local'
     if not email:
         return None
 
-    role_value = _first_present(payload, 'roleName', 'role', 'authority', 'designation') or ''
+    role_value = _first_present(payload, 'roleName', 'role', 'authority', 'designation', 'roleCode') or ''
     permissions = _payload_values(payload, 'permissions', 'permissionCodes', 'authorities')
     modules = _payload_values(payload, 'modules', 'moduleCodes', 'enabledModules')
-    user_tenant = str(_first_present(payload, 'tenantCode', 'tenantId', 'tenant_id', 'companyId') or tenant_id)
+    user_tenant = str(_first_present(payload, 'tenantCode', 'tenantId', 'tenant_id', 'companyId', 'organizationId') or tenant_id)
     full_name = _first_present(payload, 'fullName', 'full_name', 'name', 'displayName')
     first_name = _first_present(payload, 'firstName', 'first_name') or ''
     last_name = _first_present(payload, 'lastName', 'last_name') or ''
@@ -117,6 +119,12 @@ def _normalize_external_user(payload, tenant_id):
         name_parts = str(full_name).strip().split(None, 1)
         first_name = name_parts[0] if name_parts else ''
         last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+    active_value = payload.get('isActive', payload.get('active', payload.get('enabled', True)))
+    status_value = str(payload.get('status', '')).strip().lower()
+    is_active = active_value is not False and str(active_value).strip().lower() not in {'false', '0', 'inactive', 'disabled'}
+    if status_value in {'inactive', 'disabled', 'deleted', 'blocked'}:
+        is_active = False
 
     return {
         'external_id': str(external_id or email),
@@ -129,7 +137,7 @@ def _normalize_external_user(payload, tenant_id):
         'permissions': permissions,
         'modules': modules,
         'tenant_id': user_tenant,
-        'is_active': payload.get('isActive', payload.get('active', True)) is not False,
+        'is_active': is_active,
     }
 
 
@@ -637,14 +645,10 @@ class LeadUsersListView(APIView):
         external_users = list_users(java_token) if java_token else []
         assignable_users = []
         seen_emails = set()
-        normalized_tenant_id = str(tenant_id).strip().lower() if tenant_id else ''
 
         for payload in external_users:
             user_data = _normalize_external_user(payload, tenant_id)
             if not user_data or not user_data['is_active']:
-                continue
-            user_tenant = str(user_data['tenant_id']).strip().lower()
-            if normalized_tenant_id and user_tenant != normalized_tenant_id:
                 continue
             user = _sync_external_user(user_data)
             seen_emails.add(user.email.lower())
@@ -658,8 +662,6 @@ class LeadUsersListView(APIView):
             })
 
         users = User.objects.filter(is_active=True)
-        if tenant_id:
-            users = users.filter(tenant_id=tenant_id)
         assignable_users.extend([
             {
                 'id': user.id,
@@ -672,6 +674,7 @@ class LeadUsersListView(APIView):
             for user in users
             if user.email.lower() not in seen_emails
         ])
+        assignable_users.sort(key=lambda item: (item.get('full_name') or item.get('email') or '').lower())
         return Response(assignable_users)
 
 
