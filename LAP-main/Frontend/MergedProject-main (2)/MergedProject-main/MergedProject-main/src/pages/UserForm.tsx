@@ -9,6 +9,7 @@ interface Role {
   id: number;
   name: string;
   active: boolean;
+  showInUserForm?: boolean;
 }
 
 interface Supervisor {
@@ -16,14 +17,12 @@ interface Supervisor {
   name: string;
 }
 
-interface ExtraField {
+interface LookupEntity {
   id: number;
-  fieldName: string;
-  label: string;
-  type: 'TEXT' | 'NUMBER' | 'DROPDOWN' | string;
-  required: boolean;
-  options?: string[];
+  name: string;
+  showInUserForm?: boolean;
 }
+
 
 interface BusinessEntity {
   id: number;
@@ -98,113 +97,6 @@ interface UserFormProps {
   onClose?: () => void;
 }
 
-const mockRoles: Role[] = [
-  { id: 1, name: 'SUPER_ADMIN', active: true },
-  { id: 2, name: 'ADMIN', active: true },
-  { id: 3, name: 'MANAGER', active: true },
-  { id: 4, name: 'EMPLOYEE', active: true }
-];
-
-const mockEntities: BusinessEntity[] = [
-  { id: 1, entityCode: 'ENT-CORP', companyName: 'Universal SaaS Corp', active: true, showInUserForm: true },
-  { id: 2, entityCode: 'ENT-APAC', companyName: 'Universal APAC Ltd', active: true, showInUserForm: true }
-];
-
-const mockDepartments: Department[] = [
-  { id: 1, deptCode: 'DEP-ENG', deptName: 'Engineering', active: true, showInUserForm: true },
-  { id: 2, deptCode: 'DEP-HR', deptName: 'Human Resources', active: true, showInUserForm: true },
-  { id: 3, deptCode: 'DEP-MKT', deptName: 'Marketing', active: true, showInUserForm: true }
-];
-
-const mockPermissions: Permission[] = [
-  // Vendor Module
-  { id: 1001, module: 'Vendor', action: 'View Vendors', permissionKey: 'VENDOR_VIEW', description: 'Can view vendors directory and profile details', active: true },
-  { id: 1002, module: 'Vendor', action: 'Create Vendor', permissionKey: 'VENDOR_CREATE', description: 'Can onboard new vendors', active: true },
-  { id: 1003, module: 'Vendor', action: 'Update Vendor', permissionKey: 'VENDOR_UPDATE', description: 'Can modify vendor profiles and contracts', active: true },
-  { id: 1004, module: 'Vendor', action: 'Delete Vendor', permissionKey: 'VENDOR_DELETE', description: 'Can archive or remove vendor records', active: true },
-  { id: 1005, module: 'Vendor', action: 'Approve Vendor Contracts', permissionKey: 'VENDOR_APPROVE', description: 'Can approve vendor agreements', active: true },
-
-  // PO Module
-  { id: 1010, module: 'PO', action: 'View POs', permissionKey: 'PO_VIEW', description: 'Can view purchase orders', active: true },
-  { id: 1011, module: 'PO', action: 'Create PO', permissionKey: 'PO_CREATE', description: 'Can draft and issue new purchase orders', active: true },
-  { id: 1012, module: 'PO', action: 'Update PO', permissionKey: 'PO_UPDATE', description: 'Can edit pending purchase orders', active: true },
-  { id: 1013, module: 'PO', action: 'Delete PO', permissionKey: 'PO_DELETE', description: 'Can cancel or remove purchase orders', active: true },
-  { id: 1014, module: 'PO', action: 'Approve PO', permissionKey: 'PO_APPROVE', description: 'Can release purchase order budgets', active: true },
-
-  // Performance Module
-  { id: 1020, module: 'Performance', action: 'View Reviews', permissionKey: 'PERFORMANCE_VIEW', description: 'Can view employee performance reviews', active: true },
-  { id: 1021, module: 'Performance', action: 'Create Review', permissionKey: 'PERFORMANCE_CREATE', description: 'Can initiate a review cycle or submit feedback', active: true },
-  { id: 1022, module: 'Performance', action: 'Update Review', permissionKey: 'PERFORMANCE_UPDATE', description: 'Can edit review drafts and parameters', active: true },
-  { id: 1023, module: 'Performance', action: 'Delete Review', permissionKey: 'PERFORMANCE_DELETE', description: 'Can remove performance assessments', active: true },
-
-  // Marketing Module
-  { id: 1030, module: 'Marketing', action: 'View Campaigns', permissionKey: 'MARKETING_VIEW', description: 'Can view marketing campaigns and analytics', active: true },
-  { id: 1031, module: 'Marketing', action: 'Create Campaign', permissionKey: 'MARKETING_CREATE', description: 'Can set up marketing leads and campaign pipelines', active: true },
-  { id: 1032, module: 'Marketing', action: 'Update Campaign', permissionKey: 'MARKETING_UPDATE', description: 'Can tweak running campaigns and followup parameters', active: true },
-  { id: 1033, module: 'Marketing', action: 'Delete Campaign', permissionKey: 'MARKETING_DELETE', description: 'Can clean up obsolete marketing materials', active: true },
-
-  // Tenant Module
-  { id: 1040, module: 'Tenant', action: 'View Tenants', permissionKey: 'TENANT_VIEW', description: 'Can inspect active platform tenant spaces', active: true },
-  { id: 1041, module: 'Tenant', action: 'Create Tenant', permissionKey: 'TENANT_CREATE', description: 'Can provision new tenant workspaces', active: true },
-  { id: 1042, module: 'Tenant', action: 'Update Tenant', permissionKey: 'TENANT_UPDATE', description: 'Can update billing plans or features of tenants', active: true },
-  { id: 1043, module: 'Tenant', action: 'Delete Tenant', permissionKey: 'TENANT_DELETE', description: 'Can suspend or delete tenant instances', active: true },
-
-  // User Module
-  { id: 1050, module: 'User', action: 'View Users', permissionKey: 'USER_VIEW', description: 'Can browse the organization user directory', active: true },
-  { id: 1051, module: 'User', action: 'Create User', permissionKey: 'USER_CREATE', description: 'Can onboard new employee profiles', active: true },
-  { id: 1052, module: 'User', action: 'Update User', permissionKey: 'USER_UPDATE', description: 'Can modify user details and permission matrix', active: true },
-  { id: 1053, module: 'User', action: 'Delete User', permissionKey: 'USER_DELETE', description: 'Can terminate user accounts and roles', active: true },
-
-  // CRM / Leads Module
-  { id: 1060, module: 'CRM', action: 'View Leads', permissionKey: 'LEAD_VIEW', description: 'Can view leads pipeline', active: true },
-  { id: 1061, module: 'CRM', action: 'Create Lead', permissionKey: 'LEAD_CREATE', description: 'Can add new leads and student forms', active: true },
-  { id: 1062, module: 'CRM', action: 'Update Lead', permissionKey: 'LEAD_UPDATE', description: 'Can edit lead profiles', active: true },
-  { id: 1063, module: 'CRM', action: 'Delete Lead', permissionKey: 'LEAD_DELETE', description: 'Can delete lead records', active: true },
-  { id: 1064, module: 'CRM', action: 'Manage Leads', permissionKey: 'LEAD_MANAGE', description: 'Can manage pipeline settings and forms', active: true },
-  { id: 1065, module: 'CRM', action: 'View CRM', permissionKey: 'CRM_VIEW', description: 'Can view CRM dashboard', active: true },
-  { id: 1066, module: 'CRM', action: 'Manage CRM', permissionKey: 'CRM_MANAGE', description: 'Can configure CRM preferences', active: true },
-
-  // HRMS Module
-  { id: 1070, module: 'HRMS', action: 'View Attendance', permissionKey: 'ATTENDANCE_VIEW', description: 'Can view attendance records', active: true },
-  { id: 1071, module: 'HRMS', action: 'Create Attendance', permissionKey: 'ATTENDANCE_CREATE', description: 'Can perform check-in and check-out', active: true },
-  { id: 1072, module: 'HRMS', action: 'Update Attendance', permissionKey: 'ATTENDANCE_UPDATE', description: 'Can update attendance logs', active: true },
-  { id: 1073, module: 'HRMS', action: 'Manage Attendance', permissionKey: 'ATTENDANCE_MANAGE', description: 'Can approve regularization requests', active: true },
-  { id: 1074, module: 'HRMS', action: 'View Leaves', permissionKey: 'LEAVE_VIEW', description: 'Can view leave applications', active: true },
-  { id: 1075, module: 'HRMS', action: 'Create Leave', permissionKey: 'LEAVE_CREATE', description: 'Can request leave of absence', active: true },
-  { id: 1076, module: 'HRMS', action: 'Update Leave', permissionKey: 'LEAVE_UPDATE', description: 'Can edit leave applications', active: true },
-  { id: 1077, module: 'HRMS', action: 'Manage Leaves', permissionKey: 'LEAVE_MANAGE', description: 'Can approve or reject leaves', active: true },
-  { id: 1078, module: 'HRMS', action: 'View Payroll', permissionKey: 'PAYROLL_VIEW', description: 'Can view salary structures and payslips', active: true },
-  { id: 1079, module: 'HRMS', action: 'Manage Payroll', permissionKey: 'PAYROLL_MANAGE', description: 'Can configure payroll processing', active: true },
-
-  // Tasks Module
-  { id: 1080, module: 'Tasks', action: 'View Tasks', permissionKey: 'TASK_VIEW', description: 'Can view general tasks list', active: true },
-  { id: 1081, module: 'Tasks', action: 'Create Task', permissionKey: 'TASK_CREATE', description: 'Can create new tasks', active: true },
-  { id: 1082, module: 'Tasks', action: 'Update Task', permissionKey: 'TASK_UPDATE', description: 'Can modify task parameters', active: true },
-  { id: 1083, module: 'Tasks', action: 'Manage Tasks', permissionKey: 'TASK_MANAGE', description: 'Can assign and delete tasks', active: true },
-
-  // Support Tickets Module
-  { id: 1090, module: 'Tickets', action: 'View Tickets', permissionKey: 'SUPPORT_TICKET_VIEW', description: 'Can view support tickets list', active: true },
-  { id: 1091, module: 'Tickets', action: 'Create Ticket', permissionKey: 'SUPPORT_TICKET_CREATE', description: 'Can raise new support tickets', active: true },
-  { id: 1092, module: 'Tickets', action: 'Update Ticket', permissionKey: 'SUPPORT_TICKET_UPDATE', description: 'Can update support ticket actions', active: true },
-  { id: 1093, module: 'Tickets', action: 'Manage Tickets', permissionKey: 'SUPPORT_TICKET_MANAGE', description: 'Can manage ticket categories and assignments', active: true },
-
-  // Affiliate Module
-  { id: 1100, module: 'Affiliate', action: 'View Affiliate', permissionKey: 'AFFILIATE_VIEW', description: 'Can view affiliate information', active: true },
-  { id: 1101, module: 'Affiliate', action: 'Manage Affiliate', permissionKey: 'AFFILIATE_MANAGE', description: 'Can manage affiliate programs', active: true },
-
-  // Reports Module
-  { id: 1110, module: 'Reports', action: 'View Reports', permissionKey: 'REPORT_VIEW', description: 'Can view global analysis reports', active: true },
-  { id: 1111, module: 'Reports', action: 'View Self Reports', permissionKey: 'REPORT_SELF', description: 'Can view personal reports', active: true },
-  { id: 1112, module: 'Reports', action: 'Export Reports', permissionKey: 'REPORT_EXPORT', description: 'Can export report data', active: true },
-
-  // Revenue Module
-  { id: 1200, module: 'Revenue', action: 'View Revenue', permissionKey: 'REVENUE_VIEW', description: 'Can view company revenue analytics', active: true },
-
-  // Settings Module
-  { id: 1300, module: 'Settings', action: 'View Settings', permissionKey: 'SETTINGS_VIEW', description: 'Can view company settings', active: true },
-  { id: 1301, module: 'Settings', action: 'Manage Settings', permissionKey: 'SETTINGS_MANAGE', description: 'Can manage system policies', active: true },
-];
-
 export default function UserForm({ userId, onClose }: UserFormProps = {}) {
   const { id: paramId } = useParams();
   const activeId = userId !== undefined ? userId : (paramId ? Number(paramId) : null);
@@ -221,21 +113,20 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [supervisorUserId, setSupervisorUserId] = useState('');
   const [profileData, setProfileData] = useState<Record<string, unknown>>({});
-
-  // Employee profile fields
+  // Employee Profile states
   const [employeeId, setEmployeeId] = useState('');
-  const [empCode, setEmpCode] = useState('');
-  const [joiningDate, setJoiningDate] = useState(new Date().toISOString().split('T')[0]);
-  const [employeeType, setEmployeeType] = useState('regular');
-  const [designation, setDesignation] = useState('software_engineer');
-  const [workMode, setWorkMode] = useState('office');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [address, setAddress] = useState('');
+  const [joiningDate, setJoiningDate] = useState(new Date().toISOString().split('T')[0]);
+  const [employeeTypeId, setEmployeeTypeId] = useState('');
+  const [designationId, setDesignationId] = useState('');
+  const [workModeId, setWorkModeId] = useState('');
 
   // Lookup fields list
   const [roles, setRoles] = useState<Role[]>([]);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
-  const [dynamicFields, setDynamicFields] = useState<ExtraField[]>([]);
+  const [availableEmployeeTypes, setAvailableEmployeeTypes] = useState<LookupEntity[]>([]);
+  const [availableDesignations, setAvailableDesignations] = useState<LookupEntity[]>([]);
+  const [availableWorkModes, setAvailableWorkModes] = useState<LookupEntity[]>([]);
 
   // Permissions and structural assignments
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
@@ -265,10 +156,11 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
         let fetchedRoles: Role[] = [];
         try {
           const rolesRes = await rolesApi.get<Role[]>('/roles', { signal: ctrl.signal });
-          fetchedRoles = rolesRes.data.filter((r) => r.active);
-        } catch (err) {
+          fetchedRoles = rolesRes.data.filter((r) => r.active && r.showInUserForm !== false);
+        } catch (err: any) {
+          if (err?.name === 'CanceledError') throw err;
           console.warn('Backend roles endpoint failed, falling back to mock roles:', err);
-          fetchedRoles = mockRoles;
+
         }
         setRoles(fetchedRoles);
 
@@ -277,27 +169,13 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
         try {
           const permsRes = await rolesApi.get<Permission[]>('/permissions', { signal: ctrl.signal });
           fetchedPerms = permsRes.data || [];
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.name === 'CanceledError') throw err;
           console.warn('Backend permissions endpoint failed, falling back to mock permissions:', err);
-          fetchedPerms = mockPermissions;
+
         }
 
-        // Merge backend fetched permissions with any missing mock permissions
-        const mergedPerms = [...fetchedPerms];
-        const fetchedKeys = new Set(fetchedPerms.map(p => normalizePermissionKey(p.permissionKey)));
-        mockPermissions.forEach(mockP => {
-          const mockKey = normalizePermissionKey(mockP.permissionKey);
-          if (!fetchedKeys.has(mockKey)) {
-            const maxId = mergedPerms.reduce((max, p) => p.id > max ? p.id : max, 0);
-            mergedPerms.push({
-              ...mockP,
-              id: maxId + 1
-            });
-            fetchedKeys.add(mockKey);
-          }
-        });
-
-        setAvailablePermissions(mergedPerms);
+        setAvailablePermissions(fetchedPerms);
 
         // Fetch Business Entities
         let fetchedEntities: BusinessEntity[] = [];
@@ -305,9 +183,10 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
           const entRes = await rolesApi.get<BusinessEntity[]>('/business-entities/active', { signal: ctrl.signal })
             .catch(() => rolesApi.get<BusinessEntity[]>('/business-entities', { signal: ctrl.signal }));
           fetchedEntities = entRes.data || [];
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.name === 'CanceledError') throw err;
           console.warn('Backend entities endpoint failed, falling back to mock entities:', err);
-          fetchedEntities = mockEntities;
+
         }
         setAvailableEntities(fetchedEntities.filter((e) => e.showInUserForm !== false));
 
@@ -317,11 +196,26 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
           const deptRes = await rolesApi.get<Department[]>('/departments/active', { signal: ctrl.signal })
             .catch(() => rolesApi.get<Department[]>('/departments', { signal: ctrl.signal }));
           fetchedDepartments = deptRes.data || [];
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.name === 'CanceledError') throw err;
           console.warn('Backend departments endpoint failed, falling back to mock departments:', err);
-          fetchedDepartments = mockDepartments;
+
         }
         setAvailableDepartments(fetchedDepartments.filter((d) => d.showInUserForm !== false));
+
+        // Fetch other lookups
+        try {
+          const [empRes, desRes, wmRes] = await Promise.all([
+            rolesApi.get<LookupEntity[]>('/employee-types/active', { signal: ctrl.signal }).catch(() => ({ data: [] })),
+            rolesApi.get<LookupEntity[]>('/designations/active', { signal: ctrl.signal }).catch(() => ({ data: [] })),
+            rolesApi.get<LookupEntity[]>('/work-modes/active', { signal: ctrl.signal }).catch(() => ({ data: [] }))
+          ]);
+          setAvailableEmployeeTypes((empRes.data || []).filter(x => x.showInUserForm !== false));
+          setAvailableDesignations((desRes.data || []).filter(x => x.showInUserForm !== false));
+          setAvailableWorkModes((wmRes.data || []).filter(x => x.showInUserForm !== false));
+        } catch (e) {
+          console.warn('Failed to fetch lookups', e);
+        }
 
         if (isEdit) {
           try {
@@ -334,24 +228,23 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
             setGender(u.gender || 'MALE');
             setSelectedRoleId(u.roleId ? String(u.roleId) : '');
             setSupervisorUserId(u.supervisorUserId ? String(u.supervisorUserId) : '');
-            setEmployeeId(u.employeeId || '');
+            setSupervisorUserId(u.supervisorUserId ? String(u.supervisorUserId) : '');
 
-            const pd = u.profileData || {};
-            setProfileData(pd);
-            setEmpCode(String(pd.emp_code || u.employeeId || ''));
-            setJoiningDate(String(pd.joining_date || new Date().toISOString().split('T')[0]));
-            setEmployeeType(String(pd.employee_type || 'regular'));
-            setDesignation(String(pd.designation || 'software_engineer'));
-            setWorkMode(String(pd.work_mode || 'office'));
-            setDateOfBirth(String(pd.date_of_birth || ''));
-            setAddress(String(pd.address || ''));
+            setEmployeeId(u.employeeId || '');
+            setDateOfBirth(u.dateOfBirth ? String(u.dateOfBirth).split('T')[0] : '');
+            setJoiningDate(u.joiningDate ? String(u.joiningDate).split('T')[0] : new Date().toISOString().split('T')[0]);
+            setEmployeeTypeId(u.employeeTypeId ? String(u.employeeTypeId) : '');
+            setDesignationId(u.designationId ? String(u.designationId) : '');
+            setWorkModeId(u.workModeId ? String(u.workModeId) : '');
 
             // Load only explicitly assigned user-level permissions.
             setSelectedPermissions(selectedPermissionIdsFromUser(u, fetchedPerms));
             setSelectedEntityIds(u.entityIds || []);
             setSelectedDepartmentIds(u.departmentIds || []);
-          } catch (err) {
+          } catch (err: any) {
+            if (err?.name === 'CanceledError') throw err;
             console.error('Failed to fetch user data for edit:', err);
+            showToast('error', 'Failed to fetch user data for editing.');
           }
         }
       } catch (err: unknown) {
@@ -367,10 +260,9 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
     return () => ctrl.abort();
   }, [activeId, isEdit, showToast]);
 
-  // Load extra fields & supervisors whenever selected Role ID changes
+  // Load supervisors whenever selected Role ID changes
   useEffect(() => {
     if (!selectedRoleId) {
-      setDynamicFields([]);
       setSupervisors([]);
       return;
     }
@@ -379,16 +271,11 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
 
     const loadRoleSpecificDetails = async () => {
       try {
-        const [fieldsRes, supRes] = await Promise.all([
-          rolesApi.get<ExtraField[]>(`/roles/${selectedRoleId}/extra-fields`, { signal: ctrl.signal }),
-          rolesApi.get<Supervisor[]>(`/users/supervisors?roleId=${selectedRoleId}`, { signal: ctrl.signal }),
-        ]);
-        setDynamicFields(fieldsRes.data || []);
+        const supRes = await rolesApi.get<Supervisor[]>(`/users/supervisors?roleId=${selectedRoleId}`, { signal: ctrl.signal });
         setSupervisors(supRes.data || []);
       } catch (err: unknown) {
         const axiosError = err as { name?: string };
         if (axiosError.name === 'CanceledError') return;
-        setDynamicFields([]);
         setSupervisors([]);
       }
     };
@@ -410,16 +297,12 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
       roleId: selectedRoleId ? parseInt(selectedRoleId, 10) : null,
       supervisorUserId: supervisorUserId ? parseInt(supervisorUserId, 10) : null,
       employeeId: employeeId || null,
-      profileData: {
-        ...profileData,
-        emp_code: empCode || employeeId,
-        joining_date: joiningDate,
-        employee_type: employeeType,
-        designation: designation,
-        work_mode: workMode,
-        date_of_birth: dateOfBirth,
-        address: address,
-      },
+      dateOfBirth: dateOfBirth || null,
+      joiningDate: joiningDate || null,
+      employeeTypeId: employeeTypeId ? parseInt(employeeTypeId, 10) : null,
+      designationId: designationId ? parseInt(designationId, 10) : null,
+      workModeId: workModeId ? parseInt(workModeId, 10) : null,
+
       permissionIds: selectedPermissions,
       entityIds: selectedEntityIds,
       departmentIds: selectedDepartmentIds,
@@ -456,12 +339,6 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
     }
   };
 
-  const handleDynamicChange = (fieldName: string, value: string) => {
-    setProfileData((prev) => ({
-      ...prev,
-      [fieldName]: value,
-    }));
-  };
 
   if (fetching) {
     return (
@@ -479,11 +356,10 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
       {/* Toast Alert */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg border text-sm transition-all duration-300 ${
-            toast.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-455'
-          }`}
+          className={`fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg border text-sm transition-all duration-300 ${toast.type === 'success'
+            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+            : 'bg-rose-500/10 border-rose-500/20 text-rose-455'
+            }`}
           role="alert"
         >
           {toast.msg}
@@ -618,6 +494,110 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
 
           <hr className="border-border" />
 
+          {/* Section: Employee Profile Details */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+              <Users className="w-4 h-4" /> Employee Profile Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isEdit && employeeId && (
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    className="w-full bg-muted/50 border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none cursor-not-allowed"
+                    value={employeeId}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Generated by backend</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Joining Date <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={joiningDate}
+                  onChange={(e) => setJoiningDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
+
+              {availableEmployeeTypes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Employee Type
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={employeeTypeId}
+                    onChange={(e) => setEmployeeTypeId(e.target.value)}
+                  >
+                    <option value="">Select Employee Type...</option>
+                    {availableEmployeeTypes.map((et) => (
+                      <option key={et.id} value={et.id}>{et.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {availableDesignations.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Designation
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={designationId}
+                    onChange={(e) => setDesignationId(e.target.value)}
+                  >
+                    <option value="">Select Designation...</option>
+                    {availableDesignations.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {availableWorkModes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Work Mode
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={workModeId}
+                    onChange={(e) => setWorkModeId(e.target.value)}
+                  >
+                    <option value="">Select Work Mode...</option>
+                    {availableWorkModes.map((wm) => (
+                      <option key={wm.id} value={wm.id}>{wm.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <hr className="border-border" />
+
           {/* Section: Role & Access Chain */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
@@ -664,252 +644,6 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
               )}
             </div>
           </div>
-
-          <hr className="border-border" />
-
-          {/* Section: Employee Profile Details */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-              <Users className="w-4 h-4" /> Employee Profile Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Employee ID / Code <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="EMP001"
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={empCode}
-                  onChange={(e) => {
-                    setEmpCode(e.target.value);
-                    setEmployeeId(e.target.value);
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Joining Date <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={joiningDate}
-                  onChange={(e) => setJoiningDate(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Employee Type <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  required
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={employeeType}
-                  onChange={(e) => setEmployeeType(e.target.value)}
-                >
-                  <option value="regular">Regular</option>
-                  <option value="contract">Contract</option>
-                  <option value="parttime">Part-Time</option>
-                  <option value="intern">Intern</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Designation <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  required
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                >
-                  <option value="software_engineer">Software Engineer</option>
-                  <option value="senior_software_engineer">Senior Software Engineer</option>
-                  <option value="team_lead">Team Lead</option>
-                  <option value="project_manager">Project Manager</option>
-                  <option value="hr_executive">HR Executive</option>
-                  <option value="hr_manager">HR Manager</option>
-                  <option value="accountant">Accountant</option>
-                  <option value="analyst">Analyst</option>
-                  <option value="intern">Intern</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Work Mode <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  required
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={workMode}
-                  onChange={(e) => setWorkMode(e.target.value)}
-                >
-                  <option value="office">Office</option>
-                  <option value="work_from_home">Work From Home</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Address
-                </label>
-                <textarea
-                  placeholder="Enter address details..."
-                  rows={3}
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dynamic Extra Fields from Active Role Schema */}
-          {dynamicFields.length > 0 && (
-            <>
-              <hr className="border-border" />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" /> Additional Role Properties
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {dynamicFields.map((field) => {
-                    const value = String(profileData[field.fieldName] ?? '');
-                    return (
-                      <div key={field.id || field.fieldName}>
-                        <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          {field.label} {field.required && <span className="text-rose-500">*</span>}
-                        </label>
-                        {field.type === 'DROPDOWN' ? (
-                          <select
-                            required={field.required}
-                            className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                            value={value}
-                            onChange={(e) => handleDynamicChange(field.fieldName, e.target.value)}
-                          >
-                            <option value="">Select option...</option>
-                            {(field.options || []).map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type={field.type === 'NUMBER' ? 'number' : 'text'}
-                            required={field.required}
-                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                            className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                            value={value}
-                            onChange={(e) => handleDynamicChange(field.fieldName, e.target.value)}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Section: Business Entities */}
-          {availableEntities.length > 0 && (
-            <>
-              <hr className="border-border" />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  Assign Business Entities
-                </h3>
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border border-border">
-                  {availableEntities.map((en) => {
-                    const isChecked = selectedEntityIds.includes(en.id);
-                    return (
-                      <label
-                        key={en.id}
-                        className="flex items-center gap-2 bg-background hover:bg-muted/50 px-3 py-2 rounded-lg border border-border cursor-pointer transition-colors text-xs font-semibold text-foreground animate-none"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-input text-primary focus:ring-1 focus:ring-primary w-4 h-4 cursor-pointer"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEntityIds([...selectedEntityIds, en.id]);
-                            } else {
-                              setSelectedEntityIds(selectedEntityIds.filter((id) => id !== en.id));
-                            }
-                          }}
-                        />
-                        <span>
-                          {en.entityCode} - {en.companyName}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Section: Departments */}
-          {availableDepartments.length > 0 && (
-            <>
-              <hr className="border-border" />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  Assign Departments
-                </h3>
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border border-border">
-                  {availableDepartments.map((dp) => {
-                    const isChecked = selectedDepartmentIds.includes(dp.id);
-                    return (
-                      <label
-                        key={dp.id}
-                        className="flex items-center gap-2 bg-background hover:bg-muted/50 px-3 py-2 rounded-lg border border-border cursor-pointer transition-colors text-xs font-semibold text-foreground animate-none"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-input text-primary focus:ring-1 focus:ring-primary w-4 h-4 cursor-pointer"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedDepartmentIds([...selectedDepartmentIds, dp.id]);
-                            } else {
-                              setSelectedDepartmentIds(selectedDepartmentIds.filter((id) => id !== dp.id));
-                            }
-                          }}
-                        />
-                        <span>
-                          {dp.deptCode} - {dp.deptName}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Section: User-Level Permissions */}
           {availablePermissions.length > 0 && (
@@ -1011,9 +745,8 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
                               return (
                                 <label
                                   key={perm.id}
-                                  className={`flex items-start gap-2 bg-background hover:bg-muted/40 p-2.5 rounded-md border border-border cursor-pointer transition-colors text-xs ${
-                                    !perm.active ? 'opacity-50 cursor-not-allowed' : ''
-                                  }`}
+                                  className={`flex items-start gap-2 bg-background hover:bg-muted/40 p-2.5 rounded-md border border-border cursor-pointer transition-colors text-xs ${!perm.active ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                                   title={`${perm.action}: ${perm.description}`}
                                 >
                                   <input

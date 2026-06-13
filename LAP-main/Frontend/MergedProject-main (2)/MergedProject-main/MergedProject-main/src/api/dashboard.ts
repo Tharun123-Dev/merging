@@ -7,6 +7,6 @@ export function getDashboardStats() {
 }
 
 export function getActivityLog() {
-  // EExpeected to return ActivityLog[]
+  // Expected to return ActivityLog[]
   return api.get<ActivityLog[]>('/dashboard/activity').then(res => res.data);
 }

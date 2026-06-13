@@ -30,6 +30,7 @@ export interface NavSection {
   items: NavItem[]
   permissions?: Permission[]
   module?: string
+  adminOnly?: boolean
 }
 
 export interface ModuleDefinition {

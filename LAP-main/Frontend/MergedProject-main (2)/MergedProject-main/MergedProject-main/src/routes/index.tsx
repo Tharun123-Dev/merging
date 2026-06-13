@@ -99,7 +99,7 @@ import DepartmentList from "@/pages/settings/DepartmentList";
 import DepartmentForm from "@/pages/settings/DepartmentForm";
 import SelfReportsPage from "@/pages/reports/SelfReportsPage";
 import SystemSettingsPage from "@/pages/settings/SystemSettingsPage";
-
+import { EmployeeTypeList, EmployeeTypeForm, DesignationList, DesignationForm, WorkModeList, WorkModeForm } from "@/pages/settings/LookupPages";
 
 function VendorProtectedRoute({ element }: { element: React.ReactElement }) {
   const auth = useAuth();
@@ -166,54 +166,63 @@ export function AppRoutes() {
 
         {/* Settings Module Routes (Wrapped in SettingsLayout) */}
         <Route element={<SettingsLayout />}>
-          <Route path="settings" element={<ProtectedRoute element={<SettingsPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/company" element={<ProtectedRoute element={<CompanyProfilePage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/billing" element={<ProtectedRoute element={<BillingPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/entities" element={<ProtectedRoute element={<BusinessEntityList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings" element={<ProtectedRoute element={<SettingsPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/company" element={<ProtectedRoute element={<CompanyProfilePage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/billing" element={<ProtectedRoute element={<BillingPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/entities" element={<ProtectedRoute element={<BusinessEntityList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
           <Route path="settings/entities/create" element={<ProtectedRoute element={<BusinessEntityForm />} permission="ROLE_CREATE" />} />
           <Route path="settings/entities/edit/:id" element={<ProtectedRoute element={<BusinessEntityForm />} permission="ROLE_UPDATE" />} />
-          <Route path="settings/departments" element={<ProtectedRoute element={<DepartmentList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/departments" element={<ProtectedRoute element={<DepartmentList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
           <Route path="settings/departments/create" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_CREATE" />} />
           <Route path="settings/departments/edit/:id" element={<ProtectedRoute element={<DepartmentForm />} permission="ROLE_UPDATE" />} />
-          <Route path="settings/id-generation" element={<ProtectedRoute element={<IdGenerationSettings />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/templates" element={<ProtectedRoute element={<TemplatesPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/employee-types" element={<ProtectedRoute element={<EmployeeTypeList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/employee-types/create" element={<ProtectedRoute element={<EmployeeTypeForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/employee-types/edit/:id" element={<ProtectedRoute element={<EmployeeTypeForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/designations" element={<ProtectedRoute element={<DesignationList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/designations/create" element={<ProtectedRoute element={<DesignationForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/designations/edit/:id" element={<ProtectedRoute element={<DesignationForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/work-modes" element={<ProtectedRoute element={<WorkModeList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/work-modes/create" element={<ProtectedRoute element={<WorkModeForm />} permission="ROLE_CREATE" />} />
+          <Route path="settings/work-modes/edit/:id" element={<ProtectedRoute element={<WorkModeForm />} permission="ROLE_UPDATE" />} />
+          <Route path="settings/id-generation" element={<ProtectedRoute element={<IdGenerationSettings />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/templates" element={<ProtectedRoute element={<TemplatesPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
           <Route path="settings/templates/create" element={<ProtectedRoute element={<TemplateFormPage />} permission="ROLE_CREATE" />} />
           <Route path="settings/templates/edit/:id" element={<ProtectedRoute element={<TemplateFormPage />} permission="ROLE_UPDATE" />} />
-          <Route path="settings/certificates" element={<ProtectedRoute element={<CertificatesList />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/onboarding-rules" element={<ProtectedRoute element={<OnboardingRulesPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/dynamic-role-fields" element={<ProtectedRoute element={<DynamicRoleFieldsPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="settings/system" element={<ProtectedRoute element={<SystemSettingsPage />} permissions={["ROLE_VIEW", "SETTINGS_VIEW", "SETTINGS_MANAGE"]} />} />
+          <Route path="settings/certificates" element={<ProtectedRoute element={<CertificatesList />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/onboarding-rules" element={<ProtectedRoute element={<OnboardingRulesPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/dynamic-role-fields" element={<ProtectedRoute element={<DynamicRoleFieldsPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="settings/system" element={<ProtectedRoute element={<SystemSettingsPage />} permissions={["ROLE_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
         </Route>
 
         {/* HRMS Module Routes (Wrapped in HrmsLayout) */}
         <Route element={<HrmsLayout />}>
-          <Route path="attendance" element={<ProtectedRoute element={<AttendancePage />} module="hrms" permission="ATTENDANCE_VIEW" />} />
-          <Route path="leave" element={<ProtectedRoute element={<LeavePage />} module="hrms" permission="LEAVE_VIEW" />} />
-          <Route path="payroll" element={<ProtectedRoute element={<PayrollPage />} module="hrms" permissions={["PAYROLL_VIEW", "SALARY_VIEW", "PAYSLIP_VIEW"]} />} />
-          <Route path="hrms/branches" element={<ProtectedRoute element={<BranchList />} module="hrms" permissions={["EMPLOYEE_VIEW", "DEPARTMENT_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/branches/create" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["EMPLOYEE_CREATE", "DEPARTMENT_CREATE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/branches/edit/:id" element={<ProtectedRoute element={<BranchForm />} module="hrms" permissions={["EMPLOYEE_UPDATE", "DEPARTMENT_UPDATE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts" element={<ProtectedRoute element={<ShiftList />} module="hrms" permissions={["ATTENDANCE_VIEW", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts/create" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_CREATE", "ATTENDANCE_MANAGE", "SETTINGS_MANAGE"]} />} />
-          <Route path="hrms/shifts/edit/:id" element={<ProtectedRoute element={<ShiftForm />} module="hrms" permissions={["ATTENDANCE_UPDATE", "ATTENDANCE_MANAGE", "SETTINGS_MANAGE"]} />} />
+          <Route path="attendance" element={<ProtectedRoute element={<AttendancePage />} module="ATTENDANCE,LEAVE,PAYROLL" permission="ATTENDANCE_VIEW_ATTENDANCE" />} />
+          <Route path="leave" element={<ProtectedRoute element={<LeavePage />} module="ATTENDANCE,LEAVE,PAYROLL" permission="LEAVE_VIEW_LEAVE" />} />
+          <Route path="payroll" element={<ProtectedRoute element={<PayrollPage />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["PAYROLL_VIEW_PAYROLL", "PAYROLL_VIEW_SALARY", "PAYROLL_VIEW_PAYSLIP"]} />} />
+          <Route path="hrms/branches" element={<ProtectedRoute element={<BranchList />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["USER_VIEW", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/branches/create" element={<ProtectedRoute element={<BranchForm />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["USER_CREATE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/branches/edit/:id" element={<ProtectedRoute element={<BranchForm />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["USER_UPDATE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts" element={<ProtectedRoute element={<ShiftList />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts/create" element={<ProtectedRoute element={<ShiftForm />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
+          <Route path="hrms/shifts/edit/:id" element={<ProtectedRoute element={<ShiftForm />} module="ATTENDANCE,LEAVE,PAYROLL" permissions={["ATTENDANCE_VIEW_ATTENDANCE", "SETTINGS_MANAGE_SETTINGS"]} />} />
         </Route>
 
         {/* CRM Module Routes (Wrapped in CrmLayout) */}
         <Route element={<CrmLayout />}>
-          <Route path="leads" element={<ProtectedRoute element={<LeadsList />} module="crm" permission="LEAD_VIEW" />} />
-          <Route path="leads/create" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
-          <Route path="leads/student-form" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
-          <Route path="leads/add-lead" element={<ProtectedRoute element={<LeadCreate />} module="crm" permission="LEAD_CREATE" />} />
-          <Route path="leads/pipeline" element={<ProtectedRoute element={<LeadPipeline />} module="crm" permission="LEAD_VIEW" />} />
-          <Route path="leads/followups" element={<ProtectedRoute element={<LeadFollowups />} module="crm" permissions={["LEAD_VIEW", "FOLLOWUP_VIEW"]} />} />
-          <Route path="leads/follow-ups" element={<ProtectedRoute element={<LeadFollowups />} module="crm" permissions={["LEAD_VIEW", "FOLLOWUP_VIEW"]} />} />
-          <Route path="leads/dashboard" element={<ProtectedRoute element={<LeadsDashboard />} module="crm" permissions={["LEAD_VIEW", "LEAD_ANALYTICS_VIEW"]} />} />
-          <Route path="leads/form-builder" element={<ProtectedRoute element={<FormBuilder />} module="crm" permissions={["LEAD_MANAGE", "CRM_MANAGE", "MANAGE_LEAD_FORMS"]} />} />
-          <Route path="leads/options" element={<ProtectedRoute element={<LeadOptions />} module="crm" permissions={["LEAD_MANAGE", "CRM_MANAGE", "MANAGE_LEAD_FORMS"]} />} />
-          <Route path="leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="crm" permission="LEAD_VIEW" />} />
-          <Route path="crm/stages" element={<ProtectedRoute element={<LeadStageList />} module="crm" permissions={["LEAD_VIEW", "LEAD_MANAGE"]} />} />
-          <Route path="crm/stages/create" element={<ProtectedRoute element={<LeadStageForm />} module="crm" permission="LEAD_MANAGE" />} />
-          <Route path="crm/stages/edit/:id" element={<ProtectedRoute element={<LeadStageForm />} module="crm" permission="LEAD_MANAGE" />} />
+          <Route path="leads" element={<ProtectedRoute element={<LeadsList />} module="leads" permission="LEADS_VIEW_LEADS" />} />
+          <Route path="leads/create" element={<ProtectedRoute element={<LeadCreate />} module="leads" permission="LEADS_CREATE_LEAD" />} />
+          <Route path="leads/student-form" element={<ProtectedRoute element={<LeadCreate />} module="leads" permission="LEADS_CREATE_LEAD" />} />
+          <Route path="leads/add-lead" element={<ProtectedRoute element={<LeadCreate />} module="leads" permission="LEADS_CREATE_LEAD" />} />
+          <Route path="leads/pipeline" element={<ProtectedRoute element={<LeadPipeline />} module="leads" permission="LEADS_VIEW_LEADS" />} />
+          <Route path="leads/followups" element={<ProtectedRoute element={<LeadFollowups />} module="leads" permissions={["LEADS_VIEW_FOLLOWUPS"]} />} />
+          <Route path="leads/follow-ups" element={<ProtectedRoute element={<LeadFollowups />} module="leads" permissions={["LEADS_VIEW_FOLLOWUPS"]} />} />
+          <Route path="leads/dashboard" element={<ProtectedRoute element={<LeadsDashboard />} module="leads" permissions={["LEADS_VIEW_LEAD_ANALYTICS"]} />} />
+          <Route path="leads/form-builder" element={<ProtectedRoute element={<FormBuilder />} module="leads" permissions={["LEADS_MANAGE_LEAD_FORMS"]} />} />
+          <Route path="leads/options" element={<ProtectedRoute element={<LeadOptions />} module="leads" permissions={["LEADS_MANAGE_LEAD_FORMS"]} />} />
+          <Route path="leads/:id" element={<ProtectedRoute element={<LeadDetails />} module="leads" permission="LEADS_VIEW_LEADS" />} />
+          <Route path="crm/stages" element={<ProtectedRoute element={<LeadStageList />} module="leads" permissions={["LEADS_VIEW_LEADS", "LEADS_EDIT_LEAD"]} />} />
+          <Route path="crm/stages/create" element={<ProtectedRoute element={<LeadStageForm />} module="leads" permission="LEADS_CREATE_LEAD" />} />
+          <Route path="crm/stages/edit/:id" element={<ProtectedRoute element={<LeadStageForm />} module="leads" permission="LEADS_EDIT_LEAD" />} />
         </Route>
 
         {/* Vendor and Procurement routes (Wrapped in VendorLayout) */}
@@ -237,14 +246,14 @@ export function AppRoutes() {
         <Route path="google/error" element={<ProtectedRoute element={<GoogleErrorPage />} />} />
         <Route path="zoom/success" element={<ProtectedRoute element={<ZoomSuccessPage />} />} />
         <Route path="messages" element={<ProtectedRoute element={<MessagesPage />} />} />
-        <Route path="tickets" element={<ProtectedRoute element={<TicketsPage />} module="tickets" permissions={["SUPPORT_TICKET_VIEW", "SUPPORT_TICKET_CREATE", "SUPPORT_TICKET_UPDATE", "SUPPORT_TICKET_MANAGE", "raise_support_ticket", "view_support_tickets", "manage_support_tickets", "manage_support_ticket_types", "SUPPORT_VIEW"]} />} />
-        <Route path="affiliate" element={<ProtectedRoute element={<AffiliateShell />} module="affiliate" permissions={["AFFILIATE_VIEW", "AFFILIATE_MANAGE"]} />} />
-        <Route path="marketing" element={<ProtectedRoute element={<MarketingPage variant="marketing" />} module="crm" permissions={["LEAD_VIEW", "CRM_VIEW"]} />} />
-        <Route path="referrals" element={<ProtectedRoute element={<MarketingPage variant="referrals" />} module="crm" permissions={["LEAD_VIEW", "CRM_VIEW"]} />} />
-        <Route path="reports" element={<ProtectedRoute element={<ReportsPage />} module="reports" permissions={["REPORT_VIEW", "REPORTS_VIEW", "REPORT_EXPORT"]} />} />
-        <Route path="self-reports" element={<ProtectedRoute element={<SelfReportsPage forcedScope="self" />} module="self-reports" permissions={["REPORT_SELF", "SELF_REPORTS_VIEW"]} />} />
-        <Route path="tasks" element={<ProtectedRoute element={<TaskShell />} module="tasks" permissions={["TASK_VIEW", "TASK_CREATE", "TASK_UPDATE", "TASK_MANAGE"]} />} />
-        <Route path="revenue" element={<ProtectedRoute element={<RevenuePage />} module="revenue" permission="REVENUE_VIEW" />} />
+        <Route path="tickets" element={<ProtectedRoute element={<TicketsPage />} module="support_tickets" permissions={["SUPPORT_TICKETS_RAISE_SUPPORT_TICKET", "SUPPORT_TICKETS_VIEW_SUPPORT_TICKETS", "SUPPORT_TICKETS_MANAGE_SUPPORT_TICKETS"]} />} />
+        <Route path="affiliate" element={<ProtectedRoute element={<AffiliateShell />} module="affiliate" permissions={["AFFILIATE_VIEW_AFFILIATE"]} />} />
+        <Route path="marketing" element={<ProtectedRoute element={<MarketingPage variant="marketing" />} module="marketing" permissions={["MARKETING_VIEW", "MARKETING_ANALYTICS_VIEW"]} />} />
+        <Route path="referrals" element={<ProtectedRoute element={<MarketingPage variant="referrals" />} module="marketing" permissions={["MARKETING_VIEW", "MARKETING_ANALYTICS_VIEW"]} />} />
+        <Route path="reports" element={<ProtectedRoute element={<ReportsPage />} module="reports" permissions={["REPORTS_VIEW_REPORTS"]} />} />
+        <Route path="self-reports" element={<ProtectedRoute element={<SelfReportsPage forcedScope="self" />} module="reports" permissions={["REPORTS_SELF_REPORTS"]} />} />
+        <Route path="tasks" element={<ProtectedRoute element={<TaskShell />} module="tasks" />} />
+        <Route path="revenue" element={<ProtectedRoute element={<RevenuePage />} module="revenue" permission="REVENUE_VIEW_REVENUE" />} />
 
         {/* Legacy LAP redirects */}
         <Route path="dashboard/attendance" element={<Navigate to="/attendance" replace />} />

@@ -360,8 +360,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     if (!hasTaskViewPermission) {
       const newComment = {
         id: `c-${Math.random().toString(36).substring(2, 11)}`,
-        author: currentUser.name,
-        avatar: currentUser.avatar,
+        author: currentUser,
         content,
         timestamp: 'Just now'
       };

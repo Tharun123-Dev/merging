@@ -22,56 +22,51 @@ export function MarketingPage({ variant = 'marketing' }: MarketingPageProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <PageHeader 
-        title={titles[variant]} 
-        description="Launch campaigns, generate social trackable links, configure promo codes, and manage incoming leads." 
+      <PageHeader
+        title={titles[variant]}
+        description="Launch campaigns, generate social trackable links, configure promo codes, and manage incoming leads."
       />
 
       <Tabs defaultValue="analytics" className="w-full">
         <div className="overflow-x-auto pb-2 border-b border-border mb-4">
           <TabsList className="flex w-max bg-transparent p-0 gap-2">
-            <TabsTrigger 
-              value="analytics" 
+            <TabsTrigger
+              value="analytics"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Analytics
             </TabsTrigger>
-            <TabsTrigger 
-              value="social" 
+            <TabsTrigger
+              value="social"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Social Link Generator
             </TabsTrigger>
-            <TabsTrigger 
-              value="campaigns" 
+            <TabsTrigger
+              value="campaigns"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Campaign Manager
             </TabsTrigger>
-            <TabsTrigger 
-              value="landing" 
+            <TabsTrigger
+              value="landing"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Landing Pages
             </TabsTrigger>
-            <TabsTrigger 
-              value="promo" 
+            <TabsTrigger
+              value="promo"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Promo Codes
             </TabsTrigger>
-            <TabsTrigger 
-              value="leads" 
+            <TabsTrigger
+              value="leads"
               className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
             >
               Leads
             </TabsTrigger>
-            <TabsTrigger 
-              value="referrals" 
-              className="px-4 py-2 text-xs font-bold border-b-2 border-transparent data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-400 rounded-none bg-transparent hover:text-cyan-400"
-            >
-              Referral Hub
-            </TabsTrigger>
+
           </TabsList>
         </div>
 
