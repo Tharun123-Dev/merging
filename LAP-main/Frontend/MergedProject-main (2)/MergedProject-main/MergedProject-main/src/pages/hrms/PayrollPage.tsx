@@ -442,7 +442,43 @@ export function PayrollPage() {
     );
   }, [activeRunDetail]);
 
-  const activeEmployeesList = activeRunDetail?.available_employees || [];
+  const activeEmployeesList = useMemo(() => {
+    if (!activeRunDetail) return [];
+    return employees.map((javaUser) => {
+      const jEmail = javaUserEmail(javaUser).toLowerCase();
+      const jName = javaUserName(javaUser);
+      const jCode = javaUserEmpCode(javaUser);
+      const jId = javaUserId(javaUser);
+
+      const structure = salaryStructuresList.find((s) => (
+        String(s.employee_id || s.employee) === jId ||
+        (!!jEmail && String(s.employee_email || '').toLowerCase() === jEmail)
+      ));
+
+      const djangoEmp = activeRunDetail.available_employees?.find((e) => (
+        (structure && String(e.id) === String(structure.employee || structure.employee_id)) ||
+        (e.name === jName) ||
+        (!!jCode && e.emp_code === jCode)
+      ));
+
+      const processed = djangoEmp?.processed || activeRunDetail.entries.some((entry) => (
+        (structure && String(entry.employee) === String(structure.employee || structure.employee_id)) ||
+        (entry.employee_name === jName) ||
+        (!!jCode && entry.emp_code === jCode)
+      ));
+
+      const hasSalary = !!structure || !!djangoEmp?.has_salary;
+      const djangoId = djangoEmp?.id || structure?.employee || structure?.employee_id || jId;
+
+      return {
+        id: djangoId,
+        name: jName,
+        emp_code: jCode || djangoEmp?.emp_code || '',
+        has_salary: hasSalary,
+        processed: processed,
+      };
+    });
+  }, [activeRunDetail, employees, salaryStructuresList]);
   const unprocessedEmployees = activeEmployeesList.filter((e) => !e.processed && e.has_salary);
   const canRunBatch = activeRunDetail?.run.status !== 'locked' && (
     processEmployeeId !== 'all' ||
