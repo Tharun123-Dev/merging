@@ -87,13 +87,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         // 3. Filter items within section
         const filteredItems = section.items.filter((item) => {
+          if (item.module && !isModuleEnabled(item.module)) {
+            return false
+          }
           if (item.permissions?.length) {
             return item.permissions.some(
               (p) => hasPermission(p)
             )
-          }
-          if (item.module && !isModuleEnabled(item.module)) {
-            return false
           }
           return true
         })

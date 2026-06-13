@@ -30,8 +30,8 @@ const parseToken = (jwtToken: string | null): User | null => {
   try {
     const payload = JSON.parse(atob(jwtToken.split('.')[1]));
     const storedRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
-    const role = storedRole || payload.role || payload.roleName || 'STAFF';
-    const normalizedRole = String(role).toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+    const role = String(storedRole || payload.role || payload.roleName || 'STAFF').trim();
+    const normalizedRole = role.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
     const isPlatformRole = ['SUPER_ADMIN', 'SUPERADMIN', 'PLATFORM_ADMIN', 'SYSTEM_ADMIN'].includes(normalizedRole);
 
     return {
@@ -39,7 +39,7 @@ const parseToken = (jwtToken: string | null): User | null => {
       email: payload.sub,
       tenantId: payload.tenantId,
       tenantCode: payload.tenantCode,
-      isPlatformAdmin: payload.tenantCode === 'SYS' || isPlatformRole,
+      isPlatformAdmin: isPlatformRole,
       role,
     };
   } catch {
@@ -114,12 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const res = await rolesApi.get<{ id: string | number; email?: string; role?: string; permissions?: string[] }>('/users/me/');
+        const res = await rolesApi.get<{ id: string | number; email?: string; role?: string; permissions?: string[]; modules?: string[] }>('/api/auth/me');
         if (!isMounted) return;
 
         const nextPermissions = Array.isArray(res.data?.permissions) ? res.data.permissions : [];
         setPermissions(nextPermissions);
         localStorage.setItem('permissions', JSON.stringify(nextPermissions));
+
+        const nextModules = Array.isArray(res.data?.modules) ? res.data.modules : [];
+        setModules(nextModules);
+        localStorage.setItem('modules', JSON.stringify(nextModules));
 
         if (res.data?.role) {
           localStorage.setItem('role', res.data.role);

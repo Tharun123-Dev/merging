@@ -9,6 +9,7 @@ interface Role {
   id: number;
   name: string;
   active: boolean;
+  showInUserForm?: boolean;
 }
 
 interface Supervisor {
@@ -19,6 +20,7 @@ interface Supervisor {
 interface LookupEntity {
   id: number;
   name: string;
+  showInUserForm?: boolean;
 }
 
 
@@ -94,46 +96,6 @@ interface UserFormProps {
   userId?: number | null;
   onClose?: () => void;
 }
-const mockPermissions: Permission[] = [
-  // Vendor Module
-  { id: 1, module: 'Vendor', action: 'View Vendors', permissionKey: 'VENDOR_VIEW', description: 'Can view vendors directory and profile details', active: true },
-  { id: 2, module: 'Vendor', action: 'Create Vendor', permissionKey: 'VENDOR_CREATE', description: 'Can onboard new vendors', active: true },
-  { id: 3, module: 'Vendor', action: 'Update Vendor', permissionKey: 'VENDOR_UPDATE', description: 'Can modify vendor profiles and contracts', active: true },
-  { id: 4, module: 'Vendor', action: 'Delete Vendor', permissionKey: 'VENDOR_DELETE', description: 'Can archive or remove vendor records', active: true },
-  { id: 5, module: 'Vendor', action: 'Approve Vendor Contracts', permissionKey: 'VENDOR_APPROVE', description: 'Can approve vendor agreements', active: true },
-
-  // PO Module
-  { id: 10, module: 'PO', action: 'View POs', permissionKey: 'PO_VIEW', description: 'Can view purchase orders', active: true },
-  { id: 11, module: 'PO', action: 'Create PO', permissionKey: 'PO_CREATE', description: 'Can draft and issue new purchase orders', active: true },
-  { id: 12, module: 'PO', action: 'Update PO', permissionKey: 'PO_UPDATE', description: 'Can edit pending purchase orders', active: true },
-  { id: 13, module: 'PO', action: 'Delete PO', permissionKey: 'PO_DELETE', description: 'Can cancel or remove purchase orders', active: true },
-  { id: 14, module: 'PO', action: 'Approve PO', permissionKey: 'PO_APPROVE', description: 'Can release purchase order budgets', active: true },
-
-  // Performance Module
-  { id: 20, module: 'Performance', action: 'View Reviews', permissionKey: 'PERFORMANCE_VIEW', description: 'Can view employee performance reviews', active: true },
-  { id: 21, module: 'Performance', action: 'Create Review', permissionKey: 'PERFORMANCE_CREATE', description: 'Can initiate a review cycle or submit feedback', active: true },
-  { id: 22, module: 'Performance', action: 'Update Review', permissionKey: 'PERFORMANCE_UPDATE', description: 'Can edit review drafts and parameters', active: true },
-  { id: 23, module: 'Performance', action: 'Delete Review', permissionKey: 'PERFORMANCE_DELETE', description: 'Can remove performance assessments', active: true },
-
-  // Marketing Module
-  { id: 30, module: 'Marketing', action: 'View Campaigns', permissionKey: 'MARKETING_VIEW', description: 'Can view marketing campaigns and analytics', active: true },
-  { id: 31, module: 'Marketing', action: 'Create Campaign', permissionKey: 'MARKETING_CREATE', description: 'Can set up marketing leads and campaign pipelines', active: true },
-  { id: 32, module: 'Marketing', action: 'Update Campaign', permissionKey: 'MARKETING_UPDATE', description: 'Can tweak running campaigns and followup parameters', active: true },
-  { id: 33, module: 'Marketing', action: 'Delete Campaign', permissionKey: 'MARKETING_DELETE', description: 'Can clean up obsolete marketing materials', active: true },
-
-  // Tenant Module
-  { id: 40, module: 'Tenant', action: 'View Tenants', permissionKey: 'TENANT_VIEW', description: 'Can inspect active platform tenant spaces', active: true },
-  { id: 41, module: 'Tenant', action: 'Create Tenant', permissionKey: 'TENANT_CREATE', description: 'Can provision new tenant workspaces', active: true },
-  { id: 42, module: 'Tenant', action: 'Update Tenant', permissionKey: 'TENANT_UPDATE', description: 'Can update billing plans or features of tenants', active: true },
-  { id: 43, module: 'Tenant', action: 'Delete Tenant', permissionKey: 'TENANT_DELETE', description: 'Can suspend or delete tenant instances', active: true },
-
-  // User Module
-  { id: 50, module: 'User', action: 'View Users', permissionKey: 'USER_VIEW', description: 'Can browse the organization user directory', active: true },
-  { id: 51, module: 'User', action: 'Create User', permissionKey: 'USER_CREATE', description: 'Can onboard new employee profiles', active: true },
-  { id: 52, module: 'User', action: 'Update User', permissionKey: 'USER_UPDATE', description: 'Can modify user details and permission matrix', active: true },
-  { id: 53, module: 'User', action: 'Delete User', permissionKey: 'USER_DELETE', description: 'Can terminate user accounts and roles', active: true },
-];
-
 
 export default function UserForm({ userId, onClose }: UserFormProps = {}) {
   const { id: paramId } = useParams();
@@ -194,7 +156,7 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
         let fetchedRoles: Role[] = [];
         try {
           const rolesRes = await rolesApi.get<Role[]>('/roles', { signal: ctrl.signal });
-          fetchedRoles = rolesRes.data.filter((r) => r.active);
+          fetchedRoles = rolesRes.data.filter((r) => r.active && r.showInUserForm !== false);
         } catch (err: any) {
           if (err?.name === 'CanceledError') throw err;
           console.warn('Backend roles endpoint failed, falling back to mock roles:', err);
@@ -213,22 +175,7 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
 
         }
 
-        // Merge backend fetched permissions with any missing mock permissions
-        const mergedPerms = [...fetchedPerms];
-        const fetchedKeys = new Set(fetchedPerms.map(p => normalizePermissionKey(p.permissionKey)));
-        mockPermissions.forEach(mockP => {
-          const mockKey = normalizePermissionKey(mockP.permissionKey);
-          if (!fetchedKeys.has(mockKey)) {
-            const maxId = mergedPerms.reduce((max, p) => p.id > max ? p.id : max, 0);
-            mergedPerms.push({
-              ...mockP,
-              id: maxId + 1
-            });
-            fetchedKeys.add(mockKey);
-          }
-        });
-
-        setAvailablePermissions(mergedPerms);
+        setAvailablePermissions(fetchedPerms);
 
         // Fetch Business Entities
         let fetchedEntities: BusinessEntity[] = [];
@@ -263,9 +210,9 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
             rolesApi.get<LookupEntity[]>('/designations/active', { signal: ctrl.signal }).catch(() => ({ data: [] })),
             rolesApi.get<LookupEntity[]>('/work-modes/active', { signal: ctrl.signal }).catch(() => ({ data: [] }))
           ]);
-          setAvailableEmployeeTypes(empRes.data || []);
-          setAvailableDesignations(desRes.data || []);
-          setAvailableWorkModes(wmRes.data || []);
+          setAvailableEmployeeTypes((empRes.data || []).filter(x => x.showInUserForm !== false));
+          setAvailableDesignations((desRes.data || []).filter(x => x.showInUserForm !== false));
+          setAvailableWorkModes((wmRes.data || []).filter(x => x.showInUserForm !== false));
         } catch (e) {
           console.warn('Failed to fetch lookups', e);
         }
@@ -593,53 +540,59 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Employee Type
-                </label>
-                <select
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={employeeTypeId}
-                  onChange={(e) => setEmployeeTypeId(e.target.value)}
-                >
-                  <option value="">Select Employee Type...</option>
-                  {availableEmployeeTypes.map((et) => (
-                    <option key={et.id} value={et.id}>{et.name}</option>
-                  ))}
-                </select>
-              </div>
+              {availableEmployeeTypes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Employee Type
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={employeeTypeId}
+                    onChange={(e) => setEmployeeTypeId(e.target.value)}
+                  >
+                    <option value="">Select Employee Type...</option>
+                    {availableEmployeeTypes.map((et) => (
+                      <option key={et.id} value={et.id}>{et.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Designation
-                </label>
-                <select
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={designationId}
-                  onChange={(e) => setDesignationId(e.target.value)}
-                >
-                  <option value="">Select Designation...</option>
-                  {availableDesignations.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
+              {availableDesignations.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Designation
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={designationId}
+                    onChange={(e) => setDesignationId(e.target.value)}
+                  >
+                    <option value="">Select Designation...</option>
+                    {availableDesignations.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Work Mode
-                </label>
-                <select
-                  className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={workModeId}
-                  onChange={(e) => setWorkModeId(e.target.value)}
-                >
-                  <option value="">Select Work Mode...</option>
-                  {availableWorkModes.map((wm) => (
-                    <option key={wm.id} value={wm.id}>{wm.name}</option>
-                  ))}
-                </select>
-              </div>
+              {availableWorkModes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Work Mode
+                  </label>
+                  <select
+                    className="w-full bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={workModeId}
+                    onChange={(e) => setWorkModeId(e.target.value)}
+                  >
+                    <option value="">Select Work Mode...</option>
+                    {availableWorkModes.map((wm) => (
+                      <option key={wm.id} value={wm.id}>{wm.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -691,84 +644,6 @@ export default function UserForm({ userId, onClose }: UserFormProps = {}) {
               )}
             </div>
           </div>
-
-          {/* Section: Business Entities */}
-          {availableEntities.length > 0 && (
-            <>
-              <hr className="border-border" />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  Assign Business Entities
-                </h3>
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border border-border">
-                  {availableEntities.map((en) => {
-                    const isChecked = selectedEntityIds.includes(en.id);
-                    return (
-                      <label
-                        key={en.id}
-                        className="flex items-center gap-2 bg-background hover:bg-muted/50 px-3 py-2 rounded-lg border border-border cursor-pointer transition-colors text-xs font-semibold text-foreground animate-none"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-input text-primary focus:ring-1 focus:ring-primary w-4 h-4 cursor-pointer"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEntityIds([...selectedEntityIds, en.id]);
-                            } else {
-                              setSelectedEntityIds(selectedEntityIds.filter((id) => id !== en.id));
-                            }
-                          }}
-                        />
-                        <span>
-                          {en.entityCode} - {en.companyName}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Section: Departments */}
-          {availableDepartments.length > 0 && (
-            <>
-              <hr className="border-border" />
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                  Assign Departments
-                </h3>
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border border-border">
-                  {availableDepartments.map((dp) => {
-                    const isChecked = selectedDepartmentIds.includes(dp.id);
-                    return (
-                      <label
-                        key={dp.id}
-                        className="flex items-center gap-2 bg-background hover:bg-muted/50 px-3 py-2 rounded-lg border border-border cursor-pointer transition-colors text-xs font-semibold text-foreground animate-none"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-input text-primary focus:ring-1 focus:ring-primary w-4 h-4 cursor-pointer"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedDepartmentIds([...selectedDepartmentIds, dp.id]);
-                            } else {
-                              setSelectedDepartmentIds(selectedDepartmentIds.filter((id) => id !== dp.id));
-                            }
-                          }}
-                        />
-                        <span>
-                          {dp.deptCode} - {dp.deptName}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Section: User-Level Permissions */}
           {availablePermissions.length > 0 && (
