@@ -661,19 +661,20 @@ class LeadUsersListView(APIView):
                 'source': 'java',
             })
 
-        users = User.objects.filter(is_active=True)
-        assignable_users.extend([
-            {
-                'id': user.id,
-                'external_id': None,
-                'full_name': user.get_full_name() or user.username,
-                'email': user.email,
-                'role': user.role,
-                'source': 'local-fallback',
-            }
-            for user in users
-            if user.email.lower() not in seen_emails
-        ])
+        if not external_users:
+            users = User.objects.filter(is_active=True)
+            assignable_users.extend([
+                {
+                    'id': user.id,
+                    'external_id': None,
+                    'full_name': user.get_full_name() or user.username,
+                    'email': user.email,
+                    'role': user.role,
+                    'source': 'local-fallback',
+                }
+                for user in users
+                if user.email.lower() not in seen_emails
+            ])
         assignable_users.sort(key=lambda item: (item.get('full_name') or item.get('email') or '').lower())
         return Response(assignable_users)
 
