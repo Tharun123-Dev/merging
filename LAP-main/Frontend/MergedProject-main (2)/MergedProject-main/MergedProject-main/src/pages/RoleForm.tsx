@@ -18,6 +18,7 @@ interface Role {
   name: string;
   description?: string;
   active: boolean;
+  showInUserForm?: boolean;
 }
 
 export default function RoleForm() {
@@ -27,6 +28,7 @@ export default function RoleForm() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [showInUserForm, setShowInUserForm] = useState(true);
 
   // Extra fields state
   const [fields, setFields] = useState<RoleField[]>([]);
@@ -57,6 +59,7 @@ export default function RoleForm() {
         if (role) {
           setName(role.name);
           setDescription(role.description || '');
+          setShowInUserForm(role.showInUserForm !== false);
         }
         
         const fieldsRes = await rolesApi.get<RoleField[]>(`/roles/${id}/extra-fields`, {
@@ -84,7 +87,7 @@ export default function RoleForm() {
 
     try {
       if (isEdit) {
-        await rolesApi.put(`/roles/${id}`, { name, description, permissionIds: [] });
+        await rolesApi.put(`/roles/${id}`, { name, description, showInUserForm, permissionIds: [] });
         if (fieldForm.fieldName && fieldForm.fieldLabel) {
           const opts = fieldForm.options
             ? fieldForm.options.split(',').map((s) => s.trim()).filter(Boolean)
@@ -104,7 +107,7 @@ export default function RoleForm() {
           }
         }
       } else {
-        await rolesApi.post('/roles', { name, description, permissionIds: [] });
+        await rolesApi.post('/roles', { name, description, showInUserForm, permissionIds: [] });
       }
       setSuccess(isEdit ? 'Role updated successfully.' : 'Role created successfully.');
       setTimeout(() => navigate('/roles'), 900);
@@ -229,6 +232,19 @@ export default function RoleForm() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <input
+              type="checkbox"
+              id="showInUserForm"
+              className="w-4 h-4 rounded border-slate-800 bg-background text-cyan-500 focus:ring-1 focus:ring-cyan-500"
+              checked={showInUserForm}
+              onChange={(e) => setShowInUserForm(e.target.checked)}
+            />
+            <label htmlFor="showInUserForm" className="text-sm font-medium text-slate-300 cursor-pointer select-none">
+              Show in User Form
+            </label>
+            <p className="text-xs text-slate-500 ml-2">(Check to make this role available in the User Onboarding dropdown)</p>
           </div>
         </div>
 
