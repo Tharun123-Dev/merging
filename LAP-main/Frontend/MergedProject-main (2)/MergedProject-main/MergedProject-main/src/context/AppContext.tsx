@@ -71,24 +71,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return navigationConfig
       .map((section) => {
         // 1. Check permission gate on section. Java permissions are the source of truth.
+        if (section.module && !isModuleEnabled(section.module)) {
+          return null
+        }
         if (section.permissions?.length) {
           const hasSecPerm = section.permissions.some(
             (p) => hasPermission(p)
           )
           if (!hasSecPerm) return null
-        } else if (section.module && !isModuleEnabled(section.module)) {
-          return null
         }
 
         // 2. Filter items within section
         const filteredItems = section.items.filter((item) => {
+          if (item.module && !isModuleEnabled(item.module)) {
+            return false
+          }
           if (item.permissions?.length) {
             return item.permissions.some(
               (p) => hasPermission(p)
             )
-          }
-          if (item.module && !isModuleEnabled(item.module)) {
-            return false
           }
           return true
         })

@@ -88,7 +88,27 @@ export default function ProtectedRoute({ element, permission, permissions, modul
     return <Navigate to="/unauthorized" replace />;
   }
 
-  if (module && !isModuleEnabled(module) && requiredPermissions.length === 0) {
+  if (!isPlatformAdmin && permissions.length === 0) {
+    const debugLog = {
+      currentPath: window.location.pathname,
+      requiredPermission: permission,
+      requiredPermissions,
+      requiredModule: module,
+      userPermissions: auth.permissions,
+      userModules: auth.modules,
+      isPlatformAdmin,
+      reason: 'No permissions granted at all'
+    };
+    console.warn('[AUTH DEBUG]', debugLog);
+    try {
+      localStorage.setItem('last_auth_debug_log', JSON.stringify(debugLog));
+    } catch (error) {
+      console.warn('Auth debug log storage failed:', error);
+    }
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  if (module && !isModuleEnabled(module)) {
     const debugLog = {
       currentPath: window.location.pathname,
       requiredPermission: permission,
